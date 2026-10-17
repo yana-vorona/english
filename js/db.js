@@ -47,9 +47,13 @@ export async function get(store, id) {
 }
 
 // Записать один или несколько объектов одной транзакцией.
-export async function put(store, items) {
+// Своё изменение помечаем _dirty — его отправит синхронизация; пришедшее из облака (fromSync) — нет.
+export async function put(store, items, { fromSync = false } = {}) {
   const list = Array.isArray(items) ? items : [items];
   if (!list.length) return;
+  for (const it of list) {
+    if (fromSync) delete it._dirty; else it._dirty = 1;
+  }
   const db = await open();
   await new Promise((resolve, reject) => {
     const t = db.transaction(store, 'readwrite');
@@ -59,4 +63,34 @@ export async function put(store, items) {
     t.onerror = () => reject(t.error);
     t.onabort = () => reject(t.error);
   });
+  if (!fromSync && typeof window !== 'undefined') window.dispatchEvent(new Event('localchange'));
+}
+
+// ---------- Для синхронизации ----------
+
+const stamp = r => r.updatedAt || r.at || 0;
+
+export async function getDirty(store) {
+  return (await getAll(store)).filter(r => r._dirty);
+}
+
+// Облако приняло записи — снимаем пометку, если запись с тех пор не менялась.
+export async function clearDirty(store, sent) {
+  const done = [];
+  for (const s of sent) {
+    const cur = await get(store, s.id);
+    if (cur && cur._dirty && stamp(cur) === stamp(s)) done.push(cur);
+  }
+  await put(store, done, { fromSync: true });
+}
+
+// Записи из облака: берём то, что новее нашего. Возвращает, сколько реально изменилось.
+export async function merge(store, incoming) {
+  const take = [];
+  for (const r of incoming) {
+    const cur = await get(store, r.id);
+    if (!cur || stamp(r) > stamp(cur)) take.push(r);
+  }
+  await put(store, take, { fromSync: true });
+  return take.length;
 }

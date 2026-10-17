@@ -1,8 +1,8 @@
 // Офлайн-режим: сначала пробуем свежую версию из сети, без сети берём сохранённую.
-const CACHE = 'english-app-v2';
+const CACHE = 'english-app-v4';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
-  './js/app.js', './js/store.js', './js/db.js', './js/importer.js', './js/ui.js', './js/study.js',
+  './js/app.js', './js/store.js', './js/db.js', './js/importer.js', './js/ui.js', './js/study.js', './js/sync.js', './js/palette.js',
   './icons/icon-192.png', './icons/icon-512.png',
 ];
 

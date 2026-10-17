@@ -2,6 +2,8 @@ import * as S from './store.js';
 import { parseText, readFileRows, guessColumns } from './importer.js';
 import { esc, plural, words, toast } from './ui.js';
 import { learnView, reviewView } from './study.js';
+import { syncConfig, syncStatus, syncNow, connect, disconnect, startSync } from './sync.js';
+import { startPalette } from './palette.js';
 
 const $app = document.getElementById('app');
 
@@ -364,8 +366,16 @@ async function settingsView() {
   try { theme = localStorage.getItem('theme') || 'auto'; } catch {}
   const persisted = navigator.storage?.persisted ? await navigator.storage.persisted() : false;
 
+  const cfg = syncConfig(), ss = syncStatus();
+  const when = t => new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   $app.innerHTML = `
     <header class="top"><h1>⚙️ Настройки</h1></header>
+    <section class="card">
+      <h2>☁️ Синхронизация</h2>
+      ${cfg ? `<p class="muted">${ss ? (ss.ok ? `✅ Всё сохранено в облаке · ${when(ss.at)}` : `⚠️ Не получилось (${esc(ss.msg)}) · ${when(ss.at)}. Попробую ещё раз сама.`) : 'Подключено, сейчас синхронизирую…'}</p>
+        <div class="row"><button class="btn" id="syncNow">🔄 Синхронизировать сейчас</button><button class="btn ghost" id="syncOff">Отключить</button></div>`
+      : '<p class="muted">Не подключена. Открой на этом устройстве ссылку подключения — и слова появятся здесь сами.</p>'}
+    </section>
     <section class="card">
       <h2>Оформление</h2>
       <div class="seg">${[['auto', '🌗 Как в системе'], ['light', '☀️ Светлая'], ['dark', '🌙 Тёмная']]
@@ -383,6 +393,16 @@ async function settingsView() {
       <h2>Хранилище</h2>
       <p class="muted">${persisted ? '🔒 Браузер обещал не удалять данные приложения.' : 'Браузер может почистить данные, если на устройстве мало места. Подстрахуйся копией 💾 или установи приложение на главный экран.'}</p>
     </section>`;
+
+  $app.querySelector('#syncNow')?.addEventListener('click', async () => {
+    toast(await syncNow() ? 'Синхронизировано ☁️' : 'Не получилось, проверь интернет');
+    settingsView();
+  });
+  $app.querySelector('#syncOff')?.addEventListener('click', async () => {
+    if (await confirmBox('Отключить синхронизацию на этом устройстве? Слова останутся здесь, но перестанут обмениваться с облаком.', 'Отключить')) {
+      disconnect(); settingsView();
+    }
+  });
 
   $app.querySelectorAll('[data-theme]').forEach(b => b.onclick = () => {
     applyTheme(b.dataset.theme);
@@ -412,6 +432,29 @@ async function settingsView() {
   };
 }
 
+// ---------- Подключение устройства по ссылке #/connect/<код> ----------
+
+async function connectView(code) {
+  try {
+    const cfg = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(code)))));
+    if (!cfg.url || !cfg.key) throw new Error();
+    connect({ url: cfg.url, key: cfg.key });
+    $app.innerHTML = '<div class="empty">☁️ Подключаюсь к облаку…</div>';
+    const ok = await syncNow();
+    toast(ok ? 'Подключено! Слова загружены ☁️' : 'Подключено, но облако пока не ответило — попробую ещё');
+  } catch {
+    toast('Ссылка подключения неверная');
+  }
+  history.replaceState(null, '', location.pathname + '#/');
+  router();
+}
+
+// Пришли изменения с другого устройства — обновляем экран, если это не занятие.
+window.addEventListener('synced', () => {
+  const h = location.hash || '#/';
+  if (/^#?\/?$|^#\/deck\//.test(h)) router();
+});
+
 // ---------- Переходы между экранами ----------
 
 const routes = [
@@ -421,6 +464,7 @@ const routes = [
   [/^#\/settings$/, settingsView],
   [/^#\/learn\/([^/]+)$/, learnView],
   [/^#\/review\/([^/]+)$/, reviewView],
+  [/^#\/connect\/(.+)$/, connectView],
 ];
 
 async function router() {
@@ -440,6 +484,8 @@ async function router() {
 
 window.addEventListener('hashchange', router);
 router();
+startSync();
+startPalette();
 
 navigator.storage?.persist?.();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
