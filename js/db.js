@@ -1,6 +1,6 @@
 // Хранилище в браузере (IndexedDB). Каждое изменение записывается сразу.
 const DB_NAME = 'english-app';
-const DB_VERSION = 2; // 2: журнал занятий events
+const DB_VERSION = 3; // 2: журнал занятий events; 3: домашка hw, настройки meta
 
 let dbPromise;
 
@@ -16,6 +16,8 @@ function open() {
           s.createIndex('deckId', 'deckId');
         }
         if (!db.objectStoreNames.contains('events')) db.createObjectStore('events', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('hw')) db.createObjectStore('hw', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'id' });
       };
       r.onsuccess = () => resolve(r.result);
       r.onerror = () => reject(r.error);

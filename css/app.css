@@ -221,3 +221,28 @@ a.btn.wide { display: flex; }
 
 .rule { background: var(--accent-soft); border-radius: 12px; padding: 10px 14px; margin: 12px 0 0; }
 .btn.blue { font-size: 22px; min-width: 60px; padding: 0 12px; }
+
+/* Домашка */
+.sub { margin: 20px 0 8px; font-size: 17px; color: var(--muted); }
+.decks.done .deck { opacity: .75; }
+.instr { font-weight: 600; }
+.hwitems { padding-left: 22px; line-height: 2.3; font-size: 17px; }
+.hwitems li { margin-bottom: 6px; }
+.slot { display: inline-flex; gap: 4px; flex-wrap: wrap; vertical-align: middle; border-radius: 10px; padding: 1px; }
+.slot.missing { outline: 2px solid var(--bad); outline-offset: 2px; }
+.ch { min-height: 36px; padding: 2px 10px; border: 2px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 16px; cursor: pointer; }
+.ch.sel { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.slot.ok .ch.sel, select.slot.ok, .slot.letter.ok { border-color: var(--ok); background: var(--ok-soft); color: var(--text); }
+.slot.bad .ch.sel, select.slot.bad, .slot.letter.bad { border-color: var(--bad); background: var(--bad-soft); color: var(--text); }
+select.slot { width: auto; min-height: 36px; padding: 2px 8px; font-size: 16px; border: 2px solid var(--line); }
+select.slot.missing { border-color: var(--bad); }
+.slot.letter { align-items: center; border: 2px solid var(--line); padding: 0 6px; }
+.slot.letter input { width: 7em; min-height: 32px; border: 0; padding: 0 2px; background: transparent; }
+.fix { color: var(--ok); font-weight: 700; margin-left: 4px; }
+.hwtext { text-align: left; font-size: 17px; line-height: 1.8; }
+.gap.filled { color: var(--accent); }
+.gap.wrong { color: var(--bad); border-color: var(--bad); }
+.ablines { display: grid; gap: 8px; margin-bottom: 12px; }
+.result { text-align: center; }
+.seg.tune { grid-template-columns: repeat(3, 1fr); margin-bottom: 10px; }
+.seg.book { grid-template-columns: 1fr 1fr; margin-bottom: 10px; }

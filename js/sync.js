@@ -3,7 +3,7 @@
 import * as db from './db.js';
 import { load, save, forget } from './ui.js';
 
-const STORES = ['decks', 'cards', 'events'];
+const STORES = ['decks', 'cards', 'events', 'hw', 'meta'];
 let running = null, timer = null;
 
 export const syncConfig = () => load('sync', null); // {url, key}
@@ -42,7 +42,9 @@ export function syncNow() {
       if (data.error) throw new Error(data.error);
       let pulled = 0;
       for (const s of STORES) {
-        await db.clearDirty(s, changes[s]);
+        // Отправленным считаем только то, что облако вернуло как сохранённое.
+        const saved = new Set((data.changes[s] || []).map(r => r.id));
+        await db.clearDirty(s, changes[s].filter(r => saved.has(r.id)));
         pulled += await db.merge(s, data.changes[s] || []);
       }
       save('syncSince', data.now);

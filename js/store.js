@@ -184,6 +184,8 @@ export async function exportAll() {
     decks: await db.getAll('decks'),
     cards: await db.getAll('cards'),
     events: await db.getAll('events'),
+    hw: await db.getAll('hw'),
+    meta: await db.getAll('meta'),
   };
 }
 
@@ -193,7 +195,7 @@ export async function importBackup(data) {
     throw new Error('Это не файл копии этого приложения');
   }
   const res = { decks: 0, cards: 0 };
-  for (const store of ['decks', 'cards', 'events']) {
+  for (const store of ['decks', 'cards', 'events', 'hw', 'meta']) {
     const mine = new Map((await db.getAll(store)).map(x => [x.id, x]));
     const take = (data[store] || []).filter(x => x && x.id && (!mine.has(x.id) || (x.updatedAt || 0) > (mine.get(x.id).updatedAt || 0)));
     await db.put(store, take);
@@ -214,4 +216,37 @@ export async function addHard(pair, hint) {
   const found = (await listCards(deck.id)).find(c => c.en.toLowerCase() === clean(pair).toLowerCase());
   if (found) return updateCard(found.id, { box: 1, due: nextDue(1) });
   await addCards(deck.id, [{ en: pair, ru: hint || pair, box: 1, due: nextDue(1) }]);
+}
+
+// ---------- Домашка ----------
+
+export async function listHw() {
+  return (await db.getAll('hw')).filter(h => !h.deleted);
+}
+
+export async function getHw(id) {
+  const h = await db.get('hw', id);
+  return h && !h.deleted ? h : null;
+}
+
+export async function saveHw(h) {
+  h.updatedAt = now();
+  await db.put('hw', h);
+  return h;
+}
+
+export async function addHw({ book, page, ex, lesson }) {
+  const t = now();
+  const h = { id: uid(), book, page, ex, lesson, content: null, status: 'todo', answers: [], createdAt: t, updatedAt: t };
+  await db.put('hw', h);
+  return h;
+}
+
+export async function getMeta(id, fallback = null) {
+  const m = await db.get('meta', id);
+  return m ? m.value : fallback;
+}
+
+export async function setMeta(id, value) {
+  await db.put('meta', { id, value, updatedAt: now() });
 }

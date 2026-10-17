@@ -5,6 +5,7 @@ import { learnView, reviewView } from './study.js';
 import { syncConfig, syncStatus, syncNow, connect, disconnect, startSync } from './sync.js';
 import { startPalette } from './palette.js';
 import { trainerList, trainerRun } from './trainer.js';
+import { hwList, hwRun } from './hw.js';
 
 const $app = document.getElementById('app');
 
@@ -468,6 +469,8 @@ const routes = [
   [/^#\/connect\/(.+)$/, connectView],
   [/^#\/trainer$/, trainerList],
   [/^#\/trainer\/([^/]+)$/, trainerRun],
+  [/^#\/hw$/, hwList],
+  [/^#\/hw\/([^/]+)$/, hwRun],
 ];
 
 async function router() {
@@ -475,7 +478,7 @@ async function router() {
   for (const [re, fn] of routes) {
     const m = h.match(re);
     if (m) {
-      const section = h.startsWith('#/settings') ? '#/settings' : h.startsWith('#/trainer') ? '#/trainer' : '#/';
+      const section = h.startsWith('#/settings') ? '#/settings' : h.startsWith('#/trainer') ? '#/trainer' : h.startsWith('#/hw') ? '#/hw' : '#/';
       document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === section));
       await fn(...m.slice(1));
       window.scrollTo(0, 0);
