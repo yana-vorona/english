@@ -1,0 +1,17 @@
+{
+  "title": "Путаем пары: charge/cost, borrow/lend, say/tell, make/do",
+  "items": [
+    { "pair": "charge / cost", "hint": "брать плату / стоить", "sentence": "The restaurant ___ $3 for a bottle of water.", "options": ["charges", "costs"], "answer": "charges", "rule": "charge - кто-то берёт плату (ресторан, магазин); cost - что-то стоит." },
+    { "pair": "charge / cost", "hint": "брать плату / стоить", "sentence": "How much does this jacket ___?", "options": ["charge", "cost"], "answer": "cost", "rule": "cost - сколько стоит вещь. Подлежащее - сама вещь." },
+    { "pair": "charge / cost", "hint": "брать плату / стоить", "sentence": "The hotel ___ us extra for breakfast.", "options": ["charged", "cost"], "answer": "charged", "rule": "charge somebody for something - брать с кого-то плату за что-то." },
+    { "pair": "borrow / lend", "hint": "взять взаймы / дать взаймы", "sentence": "Can I ___ your pen for a minute?", "options": ["borrow", "lend"], "answer": "borrow", "rule": "borrow - взять у кого-то (себе). Can I borrow…?" },
+    { "pair": "borrow / lend", "hint": "взять взаймы / дать взаймы", "sentence": "Could you ___ me some money until Friday?", "options": ["borrow", "lend"], "answer": "lend", "rule": "lend somebody something - дать кому-то. Could you lend me…?" },
+    { "pair": "borrow / lend", "hint": "взять взаймы / дать взаймы", "sentence": "I ___ a book from the library yesterday.", "options": ["borrowed", "lent"], "answer": "borrowed", "rule": "borrow from - взять у кого-то / откуда-то." },
+    { "pair": "say / tell", "hint": "сказать / рассказать, сказать кому-то", "sentence": "She ___ me that she was tired.", "options": ["said", "told"], "answer": "told", "rule": "tell + кому (me, him, us): told me. После say «кому» сразу не ставится." },
+    { "pair": "say / tell", "hint": "сказать / рассказать, сказать кому-то", "sentence": "He ___ that the shop was closed.", "options": ["said", "told"], "answer": "said", "rule": "say + что сказал (без «кому»): He said that…" },
+    { "pair": "say / tell", "hint": "сказать / рассказать, сказать кому-то", "sentence": "Can you ___ me a story?", "options": ["say", "tell"], "answer": "tell", "rule": "tell a story, tell a lie, tell the truth - устойчивые сочетания с tell." },
+    { "pair": "make / do", "hint": "делать (создавать) / делать (выполнять)", "sentence": "I need to ___ my homework tonight.", "options": ["make", "do"], "answer": "do", "rule": "do - работа, дела, задания: do homework, do the shopping." },
+    { "pair": "make / do", "hint": "делать (создавать) / делать (выполнять)", "sentence": "Don't ___ so much noise!", "options": ["make", "do"], "answer": "make", "rule": "make - создавать результат: make noise, make a cake, make a mistake." },
+    { "pair": "make / do", "hint": "делать (создавать) / делать (выполнять)", "sentence": "Everyone can ___ a mistake.", "options": ["make", "do"], "answer": "make", "rule": "make a mistake - устойчивое сочетание (не do!)." }
+  ]
+}

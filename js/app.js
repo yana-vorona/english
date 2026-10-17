@@ -4,6 +4,7 @@ import { esc, plural, words, toast } from './ui.js';
 import { learnView, reviewView } from './study.js';
 import { syncConfig, syncStatus, syncNow, connect, disconnect, startSync } from './sync.js';
 import { startPalette } from './palette.js';
+import { trainerList, trainerRun } from './trainer.js';
 
 const $app = document.getElementById('app');
 
@@ -465,6 +466,8 @@ const routes = [
   [/^#\/learn\/([^/]+)$/, learnView],
   [/^#\/review\/([^/]+)$/, reviewView],
   [/^#\/connect\/(.+)$/, connectView],
+  [/^#\/trainer$/, trainerList],
+  [/^#\/trainer\/([^/]+)$/, trainerRun],
 ];
 
 async function router() {
@@ -472,8 +475,8 @@ async function router() {
   for (const [re, fn] of routes) {
     const m = h.match(re);
     if (m) {
-      document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on',
-        a.getAttribute('href') === '#/settings' ? h === '#/settings' : a.getAttribute('href') === '#/' && h !== '#/settings'));
+      const section = h.startsWith('#/settings') ? '#/settings' : h.startsWith('#/trainer') ? '#/trainer' : '#/';
+      document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === section));
       await fn(...m.slice(1));
       window.scrollTo(0, 0);
       return;

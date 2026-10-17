@@ -201,3 +201,17 @@ export async function importBackup(data) {
   }
   return res;
 }
+
+// ---------- Тренажёр ----------
+
+export async function logEvent(type, cardId, ok) {
+  await log(type, cardId, ok);
+}
+
+// Трудная пара из тренажёра → карточка в теме «🎯 Тренажёр», коробка 1, повтор завтра.
+export async function addHard(pair, hint) {
+  const deck = await findOrCreateDeck('🎯 Тренажёр');
+  const found = (await listCards(deck.id)).find(c => c.en.toLowerCase() === clean(pair).toLowerCase());
+  if (found) return updateCard(found.id, { box: 1, due: nextDue(1) });
+  await addCards(deck.id, [{ en: pair, ru: hint || pair, box: 1, due: nextDue(1) }]);
+}
