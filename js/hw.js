@@ -24,7 +24,7 @@ function slotsOf(c) {
     for (const m of it.text.matchAll(RE)) {
       const v = m[1];
       if (v === '#') slots.push({ kind: 'list', item: i });
-      else if (v.startsWith('=')) slots.push({ kind: 'letter', start: v.slice(1), item: i });
+      else if (v.startsWith('=')) slots.push({ kind: v.length > 1 ? 'letter' : 'write', start: v.slice(1), item: i });
       else if (v.includes('|')) slots.push({ kind: 'inline', opts: v.split('|'), item: i });
     }
   });
@@ -32,12 +32,13 @@ function slotsOf(c) {
 }
 
 // Минуты на одно место (стартовые формулы Яны), потом умножаем на её поправку.
-const RATE = { inline: 0.5, list: 0.5, ab: 0.7, letter: 0.7 };
+const RATE = { inline: 0.5, list: 0.5, ab: 0.7, letter: 0.7, write: 1 };
 const FORMAT = {
   inline: 'выбрать слово в предложении, писать не нужно',
   list: 'вставить слова из списка, писать не нужно',
   ab: 'текст с пропусками: выбрать a или b',
   letter: 'дописать слово по первой букве',
+  write: 'вписать слово или форму глагола',
 };
 
 function estimate(c, factor = 1) {
@@ -54,7 +55,7 @@ function formatOf(c) {
 
 function defaultDifficulty(c) {
   if (c.kind === 'new') return 'red';
-  return slotsOf(c).some(s => s.kind === 'letter' || s.kind === 'ab') ? 'yellow' : 'green';
+  return slotsOf(c).some(s => s.kind === 'letter' || s.kind === 'write' || s.kind === 'ab') ? 'yellow' : 'green';
 }
 
 const DIFF = { green: '🟢', yellow: '🟡', red: '🔴' };
@@ -244,9 +245,9 @@ export async function hwRun(id) {
       return `<select class="slot${st}" data-s="${i}"${checked ? ' disabled' : ''}><option value="">…</option>${(c.words || []).map(w =>
         `<option${norm(v) === norm(w) ? ' selected' : ''}>${esc(w)}</option>`).join('')}<option value="не знаю"${v === 'не знаю' ? ' selected' : ''}>🤷 не знаю</option></select>`;
     }
-    if (s.kind === 'letter') {
+    if (s.kind === 'letter' || s.kind === 'write') {
       const rest = v.toLowerCase().startsWith(s.start.toLowerCase()) ? v.slice(s.start.length) : '';
-      return `<span class="slot letter${st}" data-s="${i}"><b>${esc(s.start)}</b><input data-s="${i}" value="${esc(rest)}" autocapitalize="off" autocorrect="off" spellcheck="false"${checked ? ' disabled' : ''}></span>`;
+      return `<span class="slot letter${st}" data-s="${i}">${s.start ? `<b>${esc(s.start)}</b>` : ''}<input data-s="${i}" value="${esc(rest)}" autocapitalize="off" autocorrect="off" spellcheck="false"${checked ? ' disabled' : ''}></span>`;
     }
     return `<span class="slot${st}" data-s="${i}">${s.opts.map((o, k) =>
       `<button type="button" class="ch${norm(v) === norm(o) ? ' sel' : ''}" data-s="${i}" data-v="${esc(o)}"${checked ? ' disabled' : ''}>${'abcd'[k]} ${esc(o)}</button>`).join('')}</span>`;
