@@ -62,9 +62,94 @@ const title = h => `${BOOK[h.book] || h.book} стр. ${h.page} упр. ${h.ex}`
 const norm = s => String(s || '').toLowerCase().replace(/[’`]/g, "'").replace(/\s+/g, ' ').trim();
 const fmtDate = d => d ? new Date(d + 'T00:00').toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', weekday: 'short' }) : '';
 
+
+// ---------- Бот в Telegram: забираем пересланную домашку прямо из приложения (без ПК) ----------
+
+// «РТ стр. 76 упр. 1, 2; учебник с. 120 ex 3-4» → [{book, page, ex}]
+function parseHw(text) {
+  const t = text.toLowerCase().replace(/ё/g, 'е');
+  const B = '(?<![а-яa-z])', E = '(?![а-яa-z])';
+  const tokens = [];
+  const add = (re, type, f) => { for (const m of t.matchAll(re)) tokens.push({ pos: m.index, type, val: f(m) }); };
+  add(new RegExp(String.raw`(рабоч\S*\s+тетрад\S*|${B}тетрад\S*|${B}р\.?\s?т${E}\.?|${B}wb${E}|workbook)`, 'g'), 'book', () => 'РТ');
+  add(new RegExp(String.raw`(${B}учебн\S*|${B}уч${E}\.?|${B}sb${E}|student'?s?\s?book)`, 'g'), 'book', () => 'Уч');
+  add(new RegExp(String.raw`(?:${B}стр\S*|${B}с${E}|${B}p${E}|${B}page|${B}pg${E})\.?\s*(\d{1,3})`, 'g'), 'page', m => m[1]);
+  add(new RegExp(String.raw`(?:${B}упр\S*|${B}ex\S*|${B}№)\.?\s*(\d{1,2}(?:\s*(?:,|и|-|–)\s*\d{1,2})*)`, 'g'), 'ex', m => m[1]);
+  tokens.sort((a, b) => a.pos - b.pos);
+  let book = 'РТ', page = null;
+  const out = [], seen = {};
+  for (const k of tokens) {
+    if (k.type === 'book') book = k.val;
+    else if (k.type === 'page') page = k.val;
+    else if (k.type === 'ex' && page) {
+      for (const n of expandEx(k.val)) {
+        const key = book + page + '/' + n;
+        if (!seen[key]) { seen[key] = 1; out.push({ book, page, ex: String(n) }); }
+      }
+    }
+  }
+  return out;
+}
+
+function expandEx(s) {
+  const out = [];
+  for (const part of s.split(/\s*(?:,|и)\s*/)) {
+    const m = part.match(/(\d+)\s*[-–]\s*(\d+)/);
+    if (m) for (let i = +m[1]; i <= +m[2] && i - +m[1] < 15; i++) out.push(i);
+    else if (/^\d+$/.test(part.trim())) out.push(+part.trim());
+  }
+  return out;
+}
+
+
+async function pullBot() {
+  const token = await S.getMeta('tgToken');
+  if (!token || !navigator.onLine) return 0;
+  const api = (m, p) => fetch(`https://api.telegram.org/bot${token}/${m}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p),
+  }).then(r => r.json());
+  let up;
+  try { up = await api('getUpdates', { offset: await S.getMeta('tgOffset', 0), timeout: 0, allowed_updates: ['message'] }); }
+  catch { return 0; }
+  if (!up.ok) return 0;
+  let owner = await S.getMeta('tgOwner');
+  let added = 0;
+  for (const u of up.result) {
+    await S.setMeta('tgOffset', u.update_id + 1);
+    const m = u.message;
+    if (!m) continue;
+    const chat = String(m.chat.id);
+    if (!owner) { owner = chat; await S.setMeta('tgOwner', owner); }
+    if (chat !== owner) continue;
+    const text = m.text || m.caption || '';
+    if (/^\/start/.test(text)) {
+      api('sendMessage', { chat_id: chat, text: 'Привет! Пересылай мне домашку от Юли — добавлю её в «Домашку» приложения 📝' });
+      continue;
+    }
+    const found = parseHw(text);
+    if (!found.length) {
+      api('sendMessage', { chat_id: chat, text: 'Не нашла тут домашку 🤔 Понимаю так: «РТ стр. 76 упр. 1, 2» или «Уч стр. 120 упр. 3»' });
+      continue;
+    }
+    const have = await S.listHw();
+    const fresh = found.filter(f => !have.some(h => h.status !== 'done' && h.book === f.book && String(h.page) === f.page && String(h.ex) === f.ex));
+    for (const f of fresh) await S.addHw({ ...f, lesson: null });
+    added += fresh.length;
+    api('sendMessage', {
+      chat_id: chat,
+      text: fresh.length
+        ? ['Добавила в «Домашку» ✅', ...fresh.map(f => `${f.book} стр. ${f.page} упр. ${f.ex}`)].join('\n')
+        : 'Это уже есть в «Домашке» 👌',
+    });
+  }
+  return added;
+}
+
 // ---------- Список ДЗ ----------
 
 export async function hwList() {
+  const fromBot = await pullBot();
+  if (fromBot) toast(`Из бота: +${fromBot} ДЗ 📥`);
   const factor = await S.getMeta('hwFactor', 1);
   const all = await S.listHw();
   const todo = all.filter(h => h.status !== 'done').sort((a, b) => (a.lesson || '').localeCompare(b.lesson || '') || a.createdAt - b.createdAt);
