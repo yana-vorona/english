@@ -6,6 +6,7 @@ import { syncConfig, syncStatus, syncNow, connect, disconnect, startSync } from 
 import { startPalette } from './palette.js';
 import { trainerList, trainerRun } from './trainer.js';
 import { hwList, hwRun } from './hw.js';
+import { statsView, computeStats, statsBanner } from './stats.js';
 
 const $app = document.getElementById('app');
 
@@ -51,10 +52,11 @@ function boxBadge(c) {
 // ---------- Экран «Мои слова» ----------
 
 async function home() {
-  const [decks, stats] = await Promise.all([S.listDecks(), S.allStats()]);
+  const [decks, stats, st] = await Promise.all([S.listDecks(), S.allStats(), computeStats()]);
   const sum = Object.values(stats).reduce((a, s) => ({ total: a.total + s.total, due: a.due + s.due }), { total: 0, due: 0 });
   $app.innerHTML = `
     <header class="top"><h1>📚 Мои слова</h1></header>
+    ${statsBanner(st)}
     ${decks.length ? `<p class="muted">${words(sum.total)} в ${decks.length} ${plural(decks.length, 'теме', 'темах', 'темах')}${sum.due ? ` · <b>🔁 ${sum.due} пора повторить</b>` : ''}</p>`
       : `<div class="empty">Пока нет ни одной темы.<br>Создай тему или загрузи слова 👇</div>`}
     ${sum.due ? `<a class="btn primary wide" href="#/review/all">🔁 Повторить всё (${sum.due})</a>` : ''}
@@ -470,6 +472,7 @@ const routes = [
   [/^#\/trainer$/, trainerList],
   [/^#\/trainer\/([^/]+)$/, trainerRun],
   [/^#\/hw$/, hwList],
+  [/^#\/stats$/, statsView],
   [/^#\/hw\/([^/]+)$/, hwRun],
 ];
 
@@ -478,7 +481,7 @@ async function router() {
   for (const [re, fn] of routes) {
     const m = h.match(re);
     if (m) {
-      const section = h.startsWith('#/settings') ? '#/settings' : h.startsWith('#/trainer') ? '#/trainer' : h.startsWith('#/hw') ? '#/hw' : '#/';
+      const section = h.startsWith('#/settings') ? '#/settings' : h.startsWith('#/trainer') ? '#/trainer' : h.startsWith('#/hw') ? '#/hw' : h.startsWith('#/stats') ? '#/stats' : '#/';
       document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === section));
       await fn(...m.slice(1));
       window.scrollTo(0, 0);

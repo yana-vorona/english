@@ -246,3 +246,14 @@ select.slot.missing { border-color: var(--bad); }
 .result { text-align: center; }
 .seg.tune { grid-template-columns: repeat(3, 1fr); margin-bottom: 10px; }
 .seg.book { grid-template-columns: 1fr 1fr; margin-bottom: 10px; }
+
+/* Мотивация */
+.nav { grid-template-columns: repeat(5, 1fr); }
+.banner { display: flex; justify-content: space-around; gap: 8px; padding: 10px 12px; margin-bottom: 10px;
+  background: var(--accent-soft); color: var(--accent); border-radius: var(--radius); font-weight: 700; }
+.banner small { font-weight: 400; color: var(--muted); }
+.bar.boss { height: 14px; margin: 8px 0; }
+.plan { display: grid; gap: 4px; margin: 6px 0; }
+.plan-row { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 10px; background: var(--bg); }
+.plan-row.today { background: var(--accent-soft); font-weight: 700; }
+.card .big-num { text-align: center; }

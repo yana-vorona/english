@@ -37,6 +37,7 @@ export function syncNow() {
       const res = await fetch(cfg.url, {
         method: 'POST',
         body: JSON.stringify({ key: cfg.key, since: load('syncSince', 0), changes }),
+        signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
