@@ -1,5 +1,5 @@
 // Офлайн-режим: сначала пробуем свежую версию из сети, без сети берём сохранённую.
-const CACHE = 'english-app-v7';
+const CACHE = 'english-app-v8';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/app.js', './js/store.js', './js/db.js', './js/importer.js', './js/ui.js', './js/study.js', './js/sync.js', './js/palette.js', './js/trainer.js', './js/hw.js', './sets/index.json',
@@ -20,7 +20,8 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   e.respondWith(
-    fetch(req)
+    // no-cache: всегда спрашиваем у сайта свежую версию, а не старую копию браузера
+    fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' })
       .then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(req, copy));
