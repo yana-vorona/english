@@ -59,7 +59,7 @@ function defaultDifficulty(c) {
 }
 
 const DIFF = { green: '🟢', yellow: '🟡', red: '🔴' };
-const title = h => `${BOOK[h.book] || h.book} стр. ${h.page} упр. ${h.ex}`;
+const title = h => h.book === 'free' ? `✍️ ${h.title || 'Своё задание'}` : `${BOOK[h.book] || h.book} стр. ${h.page} упр. ${h.ex}`;
 const norm = s => String(s || '').toLowerCase().replace(/[’`]/g, "'").replace(/\s+/g, ' ').trim();
 const fmtDate = d => d ? new Date(d + 'T00:00').toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', weekday: 'short' }) : '';
 
@@ -180,8 +180,8 @@ export async function hwList() {
     const diff = h.difficulty || (c ? defaultDifficulty(c) : null);
     return `<a class="deck hw" href="#/hw/${h.id}">
       <div class="deck-head"><span class="deck-name">${esc(title(h))}</span>
-        <span>${c ? `⏱ ~${mins(h)} мин ${DIFF[diff] || ''}` : '⏳'}</span></div>
-      <div class="deck-meta">${h.lesson ? `к уроку ${esc(fmtDate(h.lesson))} · ` : ''}${c ? esc(formatOf(c)) : 'жду содержимого — разложу упражнение по кнопкам'}</div>
+        <span>${c ? `⏱ ~${mins(h)} мин ${DIFF[diff] || ''}` : (h.book === 'free' ? '✍️' : '⏳')}</span></div>
+      <div class="deck-meta">${h.lesson ? `к уроку ${esc(fmtDate(h.lesson))} · ` : ''}${c ? esc(formatOf(c)) : (h.book === 'free' ? (h.tutor?.answer ? '🦊 Claude ответил' : 'своё задание: заметки + проверка Claude') : 'жду содержимого — разложу упражнение по кнопкам')}</div>
       ${h.status === 'done' ? `<div class="deck-meta">✅ ${h.result ? `${h.result.right} из ${h.result.total}` : 'сделано'}</div>` : ''}
     </a>`;
   };
@@ -199,12 +199,13 @@ export async function hwList() {
 function addDialog() {
   const d = document.createElement('dialog');
   d.className = 'dlg';
-  const today = new Date().toISOString().slice(0, 10);
+  const today = nextLesson();
   d.innerHTML = `<form method="dialog">
     <h3>Новое ДЗ</h3>
-    <div class="seg book"><button type="button" data-b="РТ" class="on">📒 РТ</button><button type="button" data-b="Уч">📘 Учебник</button></div>
-    <label>Страница<input name="page" inputmode="numeric" required></label>
-    <label>Упражнения (можно несколько: 1, 3)<input name="ex" required></label>
+    <div class="seg book three"><button type="button" data-b="РТ" class="on">📒 РТ</button><button type="button" data-b="Уч">📘 Учебник</button><button type="button" data-b="free">✍️ Своё</button></div>
+    <div class="bookonly"><label>Страница<input name="page" inputmode="numeric"></label>
+    <label>Упражнения (можно несколько: 1, 3)<input name="ex"></label></div>
+    <label class="freeonly hidden">Что задано (например: разобрать видео)<input name="title"></label>
     <label>К уроку<input name="lesson" type="date" value="${today}"></label>
     <div class="row rev"><button value="ok" class="btn primary">Добавить</button><button value="cancel" class="btn ghost" formnovalidate>Отмена</button></div>
   </form>`;
@@ -213,10 +214,17 @@ function addDialog() {
   d.querySelectorAll('[data-b]').forEach(b => b.onclick = () => {
     book = b.dataset.b;
     d.querySelectorAll('[data-b]').forEach(x => x.classList.toggle('on', x === b));
+    d.querySelector('.bookonly').classList.toggle('hidden', book === 'free');
+    d.querySelector('.freeonly').classList.toggle('hidden', book !== 'free');
   });
   d.addEventListener('close', async () => {
     const f = d.querySelector('form');
-    if (d.returnValue === 'ok') {
+    if (d.returnValue === 'ok' && book === 'free') {
+      const h = await S.addHw({ book: 'free', page: '', ex: '', lesson: f.lesson.value });
+      h.title = f.title.value.trim() || 'Своё задание';
+      await S.saveHw(h);
+      hwList();
+    } else if (d.returnValue === 'ok' && f.page.value.trim() && f.ex.value.trim()) {
       const exs = f.ex.value.split(/[,\s]+/).filter(Boolean);
       for (const ex of exs) await S.addHw({ book, page: f.page.value.trim(), ex, lesson: f.lesson.value });
       toast(`Добавлено: ${exs.length}. Разложу по кнопкам ⏳`);
@@ -236,6 +244,7 @@ export async function hwRun(id) {
   const c = h.content;
   const factor = await S.getMeta('hwFactor', 1);
 
+  if (h.book === 'free') return freeRun(h);
   if (!c) {
     $app.innerHTML = `
       <header class="top"><a class="back" href="${back}">‹</a><h1 class="grow">${esc(title(h))}</h1><button class="icon" id="del">🗑</button></header>
@@ -405,6 +414,30 @@ export async function hwRun(id) {
   };
 
   render();
+}
+
+// «Своё» задание: заметки Яны → Claude на ПК дополняет и задаёт вопросы (h.tutor).
+function freeRun(h) {
+  const t = h.tutor || {};
+  $app.innerHTML = `
+    <header class="top"><a class="back" href="#/hw">‹</a><h1 class="grow">${esc(title(h))}</h1><button class="icon" id="del">🗑</button></header>
+    ${h.lesson ? `<p class="muted">к уроку ${esc(fmtDate(h.lesson))}</p>` : ''}
+    <label class="field">Что сделала, что поняла, мои заметки
+      <textarea id="notes" rows="8" placeholder="Например: посмотрела видео про Past perfect. Поняла, что…">${esc(h.notes || '')}</textarea></label>
+    ${t.status === 'new' || t.status === 'work' ? '<p class="center">⏳ Claude читает твои заметки — ответ появится здесь и придёт в Telegram</p>' : ''}
+    ${t.answer ? `<div class="card tutor"><h2>🦊 Claude</h2><p class="pre">${esc(t.answer)}</p></div>` : ''}
+    <button class="btn primary wide" id="check">${t.answer ? '🔁 Дописала — проверь ещё раз' : '✓ Сделала — проверь меня'}</button>`;
+  bindDelete(h);
+  const notes = $app.querySelector('#notes');
+  notes.oninput = () => { h.notes = notes.value; S.saveHw(h); };
+  $app.querySelector('#check').onclick = async () => {
+    if (!notes.value.trim()) { notes.focus(); toast('Напиши пару строк, что сделала 🙂'); return; }
+    Object.assign(h, { notes: notes.value, status: 'done', doneAt: h.doneAt || Date.now(), minutes: h.minutes || 15,
+      tutor: { status: 'new', answer: t.answer || '', at: Date.now() } });
+    await S.saveHw(h);
+    toast('Отправила Claude 🦊');
+    freeRun(h);
+  };
 }
 
 // Сделала без приложения: засчитываем (серия, баллы, глава истории), без проверки.

@@ -1,4 +1,5 @@
 import * as S from './store.js';
+import { getAll as dbAll } from './db.js';
 import { parseText, readFileRows, guessColumns } from './importer.js';
 import { esc, plural, words, toast } from './ui.js';
 import { learnView, reviewView } from './study.js';
@@ -382,6 +383,13 @@ async function settingsView() {
       : '<p class="muted">Не подключена. Открой на этом устройстве ссылку подключения — и слова появятся здесь сами.</p>'}
     </section>
     <section class="card">
+      <h2>🛠 Фиксить</h2>
+      <p class="muted">Напиши, что поправить или добавить в приложении. Отдельный Claude на ПК сделает и ответит здесь и в Telegram.</p>
+      <textarea id="fixText" rows="3" placeholder="Например: сделай кнопки побольше"></textarea>
+      <button class="btn primary wide" id="fixSend">Отправить</button>
+      <div id="fixList"></div>
+    </section>
+    <section class="card">
       <h2>Оформление</h2>
       <div class="seg">${[['auto', '🌗 Как в системе'], ['light', '☀️ Светлая'], ['dark', '🌙 Тёмная']]
         .map(([v, l]) => `<button data-theme="${v}" class="${v === theme ? 'on' : ''}">${l}</button>`).join('')}</div>
@@ -403,6 +411,18 @@ async function settingsView() {
     toast(await syncNow() ? 'Синхронизировано ☁️' : 'Не получилось, проверь интернет');
     settingsView();
   });
+  const fixes = (await dbAll('meta')).filter(m => String(m.id).startsWith('fix:') && m.value).sort((a, b) => b.value.at - a.value.at).slice(0, 8);
+  const ST = { new: '⏳ ждёт', work: '🔧 делаю', done: '✅ готово' };
+  $app.querySelector('#fixList').innerHTML = fixes.map(m => `<div class="fix-item"><p><b>${ST[m.value.status] || ''}</b> ${esc(m.value.text)}</p>
+    ${m.value.answer ? `<p class="muted">🦊 ${esc(m.value.answer)}</p>` : ''}</div>`).join('');
+  $app.querySelector('#fixSend').onclick = async () => {
+    const text = $app.querySelector('#fixText').value.trim();
+    if (!text) return;
+    await S.setMeta('fix:' + S.uid(), { text, status: 'new', at: Date.now() });
+    toast('Отправила 🛠 Ответ придёт в Telegram');
+    settingsView();
+  };
+
   $app.querySelector('#syncAll')?.addEventListener('click', async () => {
     connect(syncConfig());
     toast(await syncNow() ? 'Всё загружено из облака ☁️' : 'Облако не ответило, попробуй ещё раз');
