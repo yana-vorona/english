@@ -284,3 +284,26 @@ select.slot.missing { border-color: var(--bad); }
   width: 48px; height: 48px; border: 0; border-radius: 12px 12px 12px 2px; background: #fff4a8; color: #3B2A20; font-size: 22px;
   box-shadow: 0 3px 10px rgba(0,0,0,.18); transform: rotate(-4deg); cursor: pointer; }
 .fh { display: flex; align-items: center; gap: 10px; } .fh img { width: 44px; height: 44px; border-radius: 11px; }
+
+/* 📌 Стикер «Фиксить» и нижняя полоска «Обновить» — как в штабе */
+#stickers { position: fixed; z-index: 15; left: 12px; top: 12px; width: 230px; }
+.fixnote { display: flex; flex-direction: column; gap: 6px; padding: 10px; background: #fff4a8; border: 1px solid #e8d977;
+  border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,.08); color: #3a3420; }
+.fixnote b { font-size: 13px; cursor: pointer; }
+.fixnote textarea { min-height: 110px; resize: vertical; font: inherit; font-size: 14px; padding: 8px; border: 1px solid #e2d68a;
+  border-radius: 8px; background: #fffbe0; color: #3a3420; }
+.fixnote .fixrow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.talkBtn { border: 1px solid #e2d68a; background: #fffbe0; color: #3a3420; border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 14px; cursor: pointer; }
+#fixnst { font-size: 12px; color: #5a5230; }
+/* на узком экране стикер свёрнут в «📌 Фиксить», щелчок — развернуть */
+@media (max-width: 1000px) {
+  #stickers { top: auto; left: 10px; bottom: calc(124px + env(safe-area-inset-bottom)); width: auto; max-width: calc(100vw - 20px); }
+  #stickers:not(.open) .fixnote { padding: 6px 10px; }
+  #stickers:not(.open) textarea, #stickers:not(.open) .fixrow { display: none; }
+  #stickers.open { width: min(320px, calc(100vw - 20px)); }
+}
+.hubbar { position: fixed; left: 0; right: 0; bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 9; display: flex; justify-content: space-between;
+  align-items: center; padding: 4px 12px; background: var(--surface); border-top: 1px solid var(--line); font-size: 13px; }
+.hubbar button { border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 8px; padding: 4px 10px; font: inherit; font-size: 13px; cursor: pointer; }
+.hubbar #upd { background: #FFE066; border-color: #e8c840; color: #3B2A20; font-weight: 700; }
+#app { padding-bottom: calc(140px + env(safe-area-inset-bottom)); }

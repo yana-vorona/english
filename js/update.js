@@ -20,18 +20,13 @@ async function check() {
   try {
     const v = await siteVersion();
     if (!loaded) loaded = v;
-    else if (v && v !== loaded && !document.getElementById('upd')) {
-      const b = document.createElement('button');
-      b.id = 'upd';
-      b.className = 'upd';
-      b.textContent = '🔄 Есть обновление — нажми';
-      b.onclick = refreshApp;
-      document.body.append(b);
-    }
+    else if (v && v !== loaded) document.getElementById('upd').hidden = false;
   } catch {}
 }
 
 export function startUpdates() {
+  document.getElementById('upd').onclick = refreshApp;
+  document.getElementById('extreload').onclick = refreshApp;
   check();
   setInterval(check, 3 * 60000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });

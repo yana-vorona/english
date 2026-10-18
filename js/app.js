@@ -1,5 +1,4 @@
 import * as S from './store.js';
-import { getAll as dbAll } from './db.js';
 import { parseText, readFileRows, guessColumns } from './importer.js';
 import { esc, plural, words, toast } from './ui.js';
 import { learnView, reviewView } from './study.js';
@@ -384,14 +383,6 @@ async function settingsView() {
         <div class="row"><button class="btn" id="syncNow">🔄 Синхронизировать сейчас</button><button class="btn" id="syncAll">⬇️ Загрузить всё заново</button><button class="btn ghost" id="syncOff">Отключить</button></div>`
       : '<p class="muted">Не подключена. Открой на этом устройстве ссылку подключения — и слова появятся здесь сами.</p>'}
     </section>
-    <button class="btn wide" id="refresh">🔄 Обновить приложение</button>
-    <section class="card">
-      <h2>🛠 Фиксить</h2>
-      <p class="muted">Напиши, что поправить или добавить в приложении. Отдельный Claude на ПК сделает и ответит здесь и в Telegram.</p>
-      <textarea id="fixText" rows="3" placeholder="Например: сделай кнопки побольше"></textarea>
-      <button class="btn primary wide" id="fixSend">Отправить</button>
-      <div id="fixList"></div>
-    </section>
     <section class="card">
       <h2>Оформление</h2>
       <div class="seg">${[['auto', '🌗 Как в системе'], ['light', '☀️ Светлая'], ['dark', '🌙 Тёмная']]
@@ -414,19 +405,6 @@ async function settingsView() {
     toast(await syncNow() ? 'Синхронизировано ☁️' : 'Не получилось, проверь интернет');
     settingsView();
   });
-  const fixes = (await dbAll('meta')).filter(m => String(m.id).startsWith('fix:') && m.value).sort((a, b) => b.value.at - a.value.at).slice(0, 8);
-  const ST = { new: '⏳ ждёт', work: '🔧 делаю', done: '✅ готово' };
-  $app.querySelector('#fixList').innerHTML = fixes.map(m => `<div class="fix-item"><p><b>${ST[m.value.status] || ''}</b> ${esc(m.value.text)}</p>
-    ${m.value.answer ? `<p class="muted">🦊 ${esc(m.value.answer)}</p>` : ''}</div>`).join('');
-  $app.querySelector('#refresh').onclick = refreshApp;
-  $app.querySelector('#fixSend').onclick = async () => {
-    const text = $app.querySelector('#fixText').value.trim();
-    if (!text) return;
-    await S.setMeta('fix:' + S.uid(), { text, status: 'new', at: Date.now() });
-    toast('Отправила 🛠 Ответ придёт в Telegram');
-    settingsView();
-  };
-
   $app.querySelector('#syncAll')?.addEventListener('click', async () => {
     connect(syncConfig());
     toast(await syncNow() ? 'Всё загружено из облака ☁️' : 'Облако не ответило, попробуй ещё раз');
@@ -529,18 +507,30 @@ startSync();
 startPalette();
 startUpdates();
 
-// Жёлтый стикер «Фиксить» в углу (как в штабе): написать, что поправить в приложении.
-const fixBtn = document.createElement('button');
-fixBtn.className = 'fix-sticker';
-fixBtn.title = 'Фиксить';
-fixBtn.textContent = '🛠';
-fixBtn.onclick = async () => {
-  const text = await ask('🛠 Что поправить или добавить в приложении?', '', 'Отправить');
-  if (!text) return;
+// 📌 Стикер «Фиксить» (как в штабе): пишешь или говоришь → «Отправить» → отдельный Claude на ПК.
+const fixn = document.getElementById('fixn'), fixst = document.getElementById('fixnst');
+document.querySelector('.fixhead').onclick = () => document.getElementById('stickers').classList.toggle('open');
+document.getElementById('fixnsend').onclick = async () => {
+  const text = fixn.value.trim();
+  if (!text) { fixn.focus(); return; }
   await S.setMeta('fix:' + S.uid(), { text, status: 'new', at: Date.now() });
-  toast('Отправила 🛠 Ответ придёт в Telegram и в Настройки');
+  fixn.value = '';
+  fixst.textContent = '✓ ушло в «Фиксить»';
+  setTimeout(() => { fixst.textContent = ''; }, 4000);
 };
-document.body.append(fixBtn);
+// 🎤 голосом — распознавание речи браузера (Chrome).
+document.getElementById('fixmic').onclick = () => {
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!R) { toast('Голосовой ввод в этом браузере не работает'); return; }
+  const r = new R();
+  r.lang = 'ru-RU';
+  r.onresult = e => { fixn.value = (fixn.value ? fixn.value + ' ' : '') + e.results[0][0].transcript; };
+  r.onend = () => { fixst.textContent = ''; };
+  fixst.textContent = '🎤 слушаю…';
+  r.start();
+};
+
+
 
 navigator.storage?.persist?.();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
