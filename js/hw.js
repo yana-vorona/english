@@ -75,6 +75,7 @@ function parseHw(text) {
   add(new RegExp(String.raw`(рабоч\S*\s+тетрад\S*|${B}тетрад\S*|${B}р\.?\s?т${E}\.?|${B}wb${E}|workbook)`, 'g'), 'book', () => 'РТ');
   add(new RegExp(String.raw`(${B}учебн\S*|${B}уч${E}\.?|${B}sb${E}|student'?s?\s?book)`, 'g'), 'book', () => 'Уч');
   add(new RegExp(String.raw`(?:${B}стр\S*|${B}с${E}|${B}p${E}|${B}page|${B}pg${E})\.?\s*(\d{1,3})`, 'g'), 'page', m => m[1]);
+  add(new RegExp(String.raw`${B}(\d{1,3})\s*(?=упр|ex|№)`, 'g'), 'page', m => m[1]); // «рт 76 упр 1» — число перед «упр» = страница
   add(new RegExp(String.raw`(?:${B}упр\S*|${B}ex\S*|${B}№)\.?\s*(\d{1,2}(?:\s*(?:,|и|-|–)\s*\d{1,2})*)`, 'g'), 'ex', m => m[1]);
   tokens.sort((a, b) => a.pos - b.pos);
   let book = 'РТ', page = null;
