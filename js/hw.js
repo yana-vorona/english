@@ -7,6 +7,7 @@
 // answers — правильные ответы по порядку всех мест выбора.
 import * as S from './store.js';
 import { esc, toast } from './ui.js';
+import { syncNow } from './sync.js';
 
 const $app = document.getElementById('app');
 const BOOK = { 'РТ': 'РТ', 'Уч': 'Уч' };
@@ -181,7 +182,7 @@ export async function hwList() {
     return `<a class="deck hw" href="#/hw/${h.id}">
       <div class="deck-head"><span class="deck-name">${esc(title(h))}</span>
         <span>${c ? `⏱ ~${mins(h)} мин ${DIFF[diff] || ''}` : (h.book === 'free' ? '✍️' : '⏳')}</span></div>
-      <div class="deck-meta">${h.lesson ? `к уроку ${esc(fmtDate(h.lesson))} · ` : ''}${c ? esc(formatOf(c)) : (h.book === 'free' ? (h.tutor?.answer ? '🦊 Claude ответил' : 'своё задание: заметки + проверка Claude') : 'жду содержимого — разложу упражнение по кнопкам')}</div>
+      <div class="deck-meta">${h.lesson ? `к уроку ${esc(fmtDate(h.lesson))} · ` : ''}${c ? esc(formatOf(c)) : (h.book === 'free' ? (h.tutor?.answer ? '🦊 Claude ответил' : 'своё задание: разбор с Claude') : 'жду содержимого — разложу упражнение по кнопкам')}</div>
       ${h.status === 'done' ? `<div class="deck-meta">✅ ${h.result ? `${h.result.right} из ${h.result.total}` : 'сделано'}</div>` : ''}
     </a>`;
   };
@@ -416,28 +417,54 @@ export async function hwRun(id) {
   render();
 }
 
-// «Своё» задание: заметки Яны → Claude на ПК дополняет и задаёт вопросы (h.tutor).
+// «Своё» задание — диалог с Claude прямо на сайте (h.chat): Яна пишет → Claude на ПК отвечает → Яна отвечает новым сообщением.
+let freePoll = null;
 function freeRun(h) {
   const t = h.tutor || {};
+  // старый вид (заметки + один ответ) превращаем в начало переписки
+  if (!h.chat) {
+    h.chat = [];
+    if (h.notes) h.chat.push({ me: 1, text: h.notes, at: t.at || h.doneAt || Date.now() });
+    if (t.answer) h.chat.push({ me: 0, text: t.answer, at: t.at || Date.now() });
+  }
+  const waiting = t.status === 'new' || t.status === 'work';
+  const hm = at => new Date(at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   $app.innerHTML = `
     <header class="top"><a class="back" href="#/hw">‹</a><h1 class="grow">${esc(title(h))}</h1><button class="icon" id="del">🗑</button></header>
     ${h.lesson ? `<p class="muted">к уроку ${esc(fmtDate(h.lesson))}</p>` : ''}
-    <label class="field">Что сделала, что поняла, мои заметки
-      <textarea id="notes" rows="8" placeholder="Например: посмотрела видео про Past perfect. Поняла, что…">${esc(h.notes || '')}</textarea></label>
-    ${t.status === 'new' || t.status === 'work' ? '<p class="center">⏳ Claude читает твои заметки — ответ появится здесь и придёт в Telegram</p>' : ''}
-    ${t.answer ? `<div class="card tutor"><h2>🦊 Claude</h2><p class="pre">${esc(t.answer)}</p></div>` : ''}
-    <button class="btn primary wide" id="check">${t.answer ? '🔁 Дописала — проверь ещё раз' : '✓ Сделала — проверь меня'}</button>`;
+    <div class="chat">
+      ${h.chat.map(m => `<div class="msg ${m.me ? 'me' : 'cl'}">${m.me ? '' : '<b>🦊 Claude</b>'}<div class="pre">${esc(m.text)}</div><span class="when">${hm(m.at)}</span></div>`).join('')
+        || '<p class="muted center">Напиши, что сделала и что поняла — Claude дополнит и задаст пару вопросов.</p>'}
+      ${waiting ? '<div class="msg cl wait">🦊 Claude пишет… (минута-две)</div>' : ''}
+    </div>
+    <div class="chatin">
+      <textarea id="msg" rows="3" placeholder="${h.chat.length ? 'Ответить Claude…' : 'Например: посмотрела видео про Past perfect. Поняла, что…'}">${esc(h.draft || '')}</textarea>
+      <button class="btn primary" id="send"${waiting ? ' disabled title="Подожди ответ Claude"' : ''}>Отправить</button>
+    </div>`;
   bindDelete(h);
-  const notes = $app.querySelector('#notes');
-  notes.oninput = () => { h.notes = notes.value; S.saveHw(h); };
-  $app.querySelector('#check').onclick = async () => {
-    if (!notes.value.trim()) { notes.focus(); toast('Напиши пару строк, что сделала 🙂'); return; }
-    Object.assign(h, { notes: notes.value, status: 'done', doneAt: h.doneAt || Date.now(), minutes: h.minutes || 15,
-      tutor: { status: 'new', answer: t.answer || '', at: Date.now() } });
+  const box = $app.querySelector('#msg');
+  box.oninput = () => { h.draft = box.value; S.saveHw(h); };
+  $app.querySelector('#send').onclick = async () => {
+    const text = box.value.trim();
+    if (!text) { box.focus(); return; }
+    h.chat.push({ me: 1, text, at: Date.now() });
+    Object.assign(h, { draft: '', status: 'done', doneAt: h.doneAt || Date.now(), minutes: h.minutes || 15,
+      tutor: { status: 'new', at: Date.now() } });
     await S.saveHw(h);
-    toast('Отправила Claude 🦊');
     freeRun(h);
   };
+  // пока ждём ответ — сверяемся с облаком почаще и перерисовываем, когда ответ пришёл
+  clearInterval(freePoll);
+  if (waiting) {
+    const here = location.hash;
+    freePoll = setInterval(async () => {
+      if (location.hash !== here) return clearInterval(freePoll);
+      await syncNow();
+      const nh = await S.getHw(h.id);
+      if (nh && (nh.tutor || {}).status === 'done') { clearInterval(freePoll); freeRun(nh); }
+    }, 15000);
+  }
+  $app.querySelector('.chat').lastElementChild?.scrollIntoView({ block: 'end' });
 }
 
 // Сделала без приложения: засчитываем (серия, баллы, глава истории), без проверки.

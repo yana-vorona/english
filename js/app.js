@@ -449,24 +449,61 @@ async function settingsView() {
 let fixAll = false;
 async function fixView() {
   const when = t => t ? new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+  const dm = t => new Date(t).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
   const all = await S.listFixes();
-  const open = all.filter(f => !f.seen);
-  const list = fixAll ? all : open;
-  const kind = f => f.seen ? ['d', 'закрыто'] : f.status === 'done' ? ['g', 'Claude ответил - проверь'] : f.status === 'work' ? ['b', 'Claude делает…'] : ['y', 'ждёт Claude'];
+  const num = new Map([...all].sort((a, b) => (a.at || 0) - (b.at || 0)).map((f, i) => [f.id, i + 1]));
+  const vis = fixAll ? all : all.filter(f => !f.seen);
+  const answered = vis.filter(f => f.status === 'done').sort((a, b) => (!!a.viewed - !!b.viewed) || (b.doneAt || 0) - (a.doneAt || 0));
+  const waiting = vis.filter(f => f.status !== 'done').sort((a, b) => (a.at || 0) - (b.at || 0));
+  const toClose = all.filter(f => f.status === 'done' && !f.seen);
+  const card = f => {
+    const c = f.seen ? 'd' : f.status === 'done' ? 'g' : f.status === 'work' ? 'b' : 'y';
+    const days = Math.max(0, Math.floor((Date.now() - (f.at || Date.now())) / 864e5));
+    return `<div class="fxcard fx-${c}${f.viewed && !f.seen ? ' fx-v' : ''}" data-fx="${esc(f.id)}">
+      <div class="fxmeta"><span class="tno">№${String(num.get(f.id)).padStart(3, '0')}</span>${f.viewed ? '<span class="muted">✓</span>' : ''}
+        <span class="fxage">с ${dm(f.at || Date.now())} · ${days} дн.</span></div>
+      <a class="fxexp" data-fxexp>▾ развернуть</a>
+      <p class="pre fxtext">${esc(f.text || '')}</p>
+      <div class="fxmore">
+        ${f.answer ? `<div class="fxans"><span class="by">Claude · ${when(f.doneAt)}</span><div class="pre">${esc(f.answer)}</div></div>` : ''}
+        ${f.status === 'done' && !f.seen ? `<div class="fxrow"><input data-fxre="${esc(f.id)}" placeholder="Дописать Claude по этой задаче…"><button class="talkBtn" data-fxsend="${esc(f.id)}">Отправить</button></div>` : ''}
+      </div>
+      ${f.status === 'done' && !f.seen ? `<div class="fxrow">${f.viewed ? '' : `<button class="talkBtn" data-fxview="${esc(f.id)}">👁 просмотрено ✓</button>`}<button class="talkBtn fxok" data-fxok="${esc(f.id)}">✓ Отработано</button></div>` : ''}
+      ${f.seen ? `<div class="fxrow"><button class="talkBtn" data-fxback="${esc(f.id)}">↩ вернуть</button></div>` : ''}
+    </div>`;
+  };
   $app.innerHTML = `
     <header class="top"><h1>📌 Фиксить</h1></header>
-    <div class="fxlegend"><span class="fxl y">ждёт Claude</span><span class="fxl b">Claude делает</span><span class="fxl g">Claude ответил - проверь и нажми «✓ Отработано»</span><span class="fxl d">закрыто (видно в «Все»)</span></div>
-    <div class="seg"><button data-fxall="0" class="${fixAll ? '' : 'on'}">Не сделано (${open.length})</button><button data-fxall="1" class="${fixAll ? 'on' : ''}">Все (${all.length})</button></div>
-    ${list.map(f => { const [c, t] = kind(f); return `<div class="fxcard fx-${c}">
-      <div class="fxmeta"><span class="tno">Ф${all.length - all.indexOf(f)}</span><span class="fxl ${c}">${t}</span><span class="muted">${when(f.at)}</span></div>
-      <p class="pre">${esc(f.text || '')}</p>
-      ${f.answer ? `<div class="fxans"><span class="by">Claude · ${when(f.doneAt)}</span><div class="pre">${esc(f.answer)}</div></div>` : ''}
-      ${f.status === 'done' && !f.seen ? `<div class="fxrow"><input data-fxre="${esc(f.id)}" placeholder="Дописать Claude по этой задаче…"><button class="talkBtn" data-fxsend="${esc(f.id)}">Отправить</button><button class="talkBtn fxok" data-fxok="${esc(f.id)}">✓ Отработано</button></div>` : ''}
-      ${f.seen ? `<div class="fxrow"><button class="talkBtn" data-fxback="${esc(f.id)}">↩ вернуть</button></div>` : ''}
-    </div>`; }).join('') || `<div class="empty">${fixAll ? 'Пока ничего не отправляла' : 'Всё отработано 🎉'}</div>`}`;
+    <div class="fxadd"><input id="fxnew" placeholder="＋ Что пофиксить / что нужно от Claude (Enter — добавить)"><button class="talkBtn" id="fxnewbtn">Добавить</button></div>
+    <div class="fxbar">
+      <span>Ждут тебя: <b>${answered.filter(f => !f.viewed && !f.seen).length}</b></span>
+      <span class="fxlegend"><span class="fxl y">ждёт Claude</span><span class="fxl b">Claude делает</span><span class="fxl g">Claude ответил — проверь и нажми «✓ Отработано»</span><span class="fxl d">закрыто (видно в «Все»)</span></span>
+      ${toClose.length ? `<button class="talkBtn fxok" id="fxcloseall">🧹 Убрать все отвеченные (${toClose.length})</button>` : ''}
+      <span class="fxseg"><button data-fxall="0" class="${fixAll ? '' : 'on'}">Не сделано</button><button data-fxall="1" class="${fixAll ? 'on' : ''}">Все</button></span>
+    </div>
+    <div class="fxcols">
+      <section class="fxcol fxcol-g"><h3>Claude ответил — посмотри</h3><div class="fxgrid">${answered.map(card).join('') || '<p class="muted">Пусто 🎉</p>'}</div></section>
+      <section class="fxcol fxcol-b"><h3>Ждёт Claude / Claude делает</h3><div class="fxgrid">${waiting.map(card).join('') || '<p class="muted">Пусто</p>'}</div></section>
+    </div>`;
   $app.querySelectorAll('[data-fxall]').forEach(b => b.onclick = () => { fixAll = b.dataset.fxall === '1'; fixView(); });
   const byId = id => all.find(f => f.id === id);
   const save = (f, ch) => { const { id, ...v } = f; return S.setMeta(id, { ...v, ...ch }); };
+  const addNew = async () => {
+    const inp = $app.querySelector('#fxnew'), text = inp.value.trim();
+    if (!text) { inp.focus(); return; }
+    await S.setMeta('fix:' + S.uid(), { text, status: 'new', at: Date.now() });
+    toast('✓ ушло в «Фиксить»'); fixView(); fixStickers();
+  };
+  $app.querySelector('#fxnewbtn').onclick = addNew;
+  $app.querySelector('#fxnew').onkeydown = e => { if (e.key === 'Enter') addNew(); };
+  $app.querySelectorAll('[data-fxexp]').forEach(a => a.onclick = () => {
+    const c = a.closest('.fxcard'); c.classList.toggle('open'); a.textContent = c.classList.contains('open') ? '▴ свернуть' : '▾ развернуть';
+  });
+  $app.querySelector('#fxcloseall')?.addEventListener('click', async () => {
+    for (const f of toClose) await save(f, { seen: Date.now() });
+    fixView(); fixStickers();
+  });
+  $app.querySelectorAll('[data-fxview]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxview), { viewed: Date.now() }); fixView(); fixStickers(); });
   $app.querySelectorAll('[data-fxok]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxok), { seen: Date.now() }); fixView(); fixStickers(); });
   $app.querySelectorAll('[data-fxback]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxback), { seen: 0 }); fixView(); fixStickers(); });
   // ответ по задаче уходит новой задачей со ссылкой на старую - Claude видит прошлые задачи и поймёт, к чему это
@@ -479,27 +516,12 @@ async function fixView() {
   });
 }
 
-// Под жёлтым стикером — что ушло и ответы Claude стикерами (как в штабе): синий делает, зелёный ответил.
+// Сколько ответов Claude ждут Яну — кружок на пункте меню «Фиксить» и на кнопке «📋 Раздел».
 async function fixStickers() {
-  const all = await S.listFixes();
-  const open = all.filter(f => !f.seen).sort((a, b) => (b.doneAt || b.at || 0) - (a.doneAt || a.at || 0));
-  const box = document.getElementById('fxstk');
-  const nAns = open.filter(f => f.status === 'done').length;
-  document.querySelector('.fixhead').textContent = '📌 Фиксить' + (nAns ? ` · ${nAns} ${nAns === 1 ? 'ответ' : nAns < 5 ? 'ответа' : 'ответов'}` : '');
-  box.innerHTML = open.map(f => {
-    const c = f.status === 'done' ? 'g' : f.status === 'work' ? 'b' : 'y';
-    return `<div class="fxst fx-${c}">
-      <div class="fxq">${esc((f.text || '').slice(0, 140))}</div>
-      ${f.status === 'done' ? `<div class="pre">${esc(f.answer || '')}</div><div class="fxrow"><button class="talkBtn fxok" data-stok="${esc(f.id)}">✓ Отработано</button></div>`
-        : `<div class="muted">${f.status === 'work' ? 'Claude делает…' : 'ждёт Claude'}</div>`}
-    </div>`;
-  }).join('');
-  box.querySelectorAll('[data-stok]').forEach(b => b.onclick = async () => {
-    const { id, ...v } = all.find(f => f.id === b.dataset.stok);
-    await S.setMeta(id, { ...v, seen: Date.now() });
-    fixStickers();
-    if (location.hash === '#/fix') fixView();
-  });
+  const n = (await S.listFixes()).filter(f => f.status === 'done' && !f.seen && !f.viewed).length;
+  const badge = document.getElementById('fxbadge');
+  badge.hidden = !n; badge.textContent = n;
+  document.getElementById('fixngo').textContent = '📋 Раздел' + (n ? ` (${n})` : '');
 }
 
 // ---------- Подключение устройства по ссылке #/connect/<код> ----------
@@ -551,8 +573,9 @@ async function router() {
   for (const [re, fn] of routes) {
     const m = h.match(re);
     if (m) {
-      const section = h.startsWith('#/settings') ? '#/settings' : h.startsWith('#/trainer') ? '#/trainer' : h.startsWith('#/hw') ? '#/hw' : (h.startsWith('#/stats') || h.startsWith('#/story') || h.startsWith('#/duel')) ? '#/stats' : '#/';
+      const section = h.startsWith('#/settings') ? '#/settings' : h.startsWith('#/trainer') ? '#/trainer' : h.startsWith('#/hw') ? '#/hw' : (h.startsWith('#/stats') || h.startsWith('#/story') || h.startsWith('#/duel')) ? '#/stats' : h === '#/fix' ? '#/fix' : '#/';
       document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === section));
+      document.body.classList.toggle('wide', h === '#/fix');
       await fn(...m.slice(1));
       window.scrollTo(0, 0);
       return;
