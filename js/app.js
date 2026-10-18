@@ -9,6 +9,8 @@ import { trainerList, trainerRun } from './trainer.js';
 import { hwList, hwRun } from './hw.js';
 import { statsView, computeStats, statsBanner } from './stats.js';
 import { storyView } from './story.js';
+import { duelView } from './duel.js';
+import { startUpdates, refreshApp } from './update.js';
 
 const $app = document.getElementById('app');
 
@@ -382,6 +384,7 @@ async function settingsView() {
         <div class="row"><button class="btn" id="syncNow">🔄 Синхронизировать сейчас</button><button class="btn" id="syncAll">⬇️ Загрузить всё заново</button><button class="btn ghost" id="syncOff">Отключить</button></div>`
       : '<p class="muted">Не подключена. Открой на этом устройстве ссылку подключения — и слова появятся здесь сами.</p>'}
     </section>
+    <button class="btn wide" id="refresh">🔄 Обновить приложение</button>
     <section class="card">
       <h2>🛠 Фиксить</h2>
       <p class="muted">Напиши, что поправить или добавить в приложении. Отдельный Claude на ПК сделает и ответит здесь и в Telegram.</p>
@@ -415,6 +418,7 @@ async function settingsView() {
   const ST = { new: '⏳ ждёт', work: '🔧 делаю', done: '✅ готово' };
   $app.querySelector('#fixList').innerHTML = fixes.map(m => `<div class="fix-item"><p><b>${ST[m.value.status] || ''}</b> ${esc(m.value.text)}</p>
     ${m.value.answer ? `<p class="muted">🦊 ${esc(m.value.answer)}</p>` : ''}</div>`).join('');
+  $app.querySelector('#refresh').onclick = refreshApp;
   $app.querySelector('#fixSend').onclick = async () => {
     const text = $app.querySelector('#fixText').value.trim();
     if (!text) return;
@@ -500,6 +504,7 @@ const routes = [
   [/^#\/hw$/, hwList],
   [/^#\/stats$/, statsView],
   [/^#\/story\/(\d+)$/, storyView],
+  [/^#\/duel\/(\w+)$/, duelView],
   [/^#\/hw\/([^/]+)$/, hwRun],
 ];
 
@@ -508,7 +513,7 @@ async function router() {
   for (const [re, fn] of routes) {
     const m = h.match(re);
     if (m) {
-      const section = h.startsWith('#/settings') ? '#/settings' : h.startsWith('#/trainer') ? '#/trainer' : h.startsWith('#/hw') ? '#/hw' : (h.startsWith('#/stats') || h.startsWith('#/story')) ? '#/stats' : '#/';
+      const section = h.startsWith('#/settings') ? '#/settings' : h.startsWith('#/trainer') ? '#/trainer' : h.startsWith('#/hw') ? '#/hw' : (h.startsWith('#/stats') || h.startsWith('#/story') || h.startsWith('#/duel')) ? '#/stats' : '#/';
       document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === section));
       await fn(...m.slice(1));
       window.scrollTo(0, 0);
@@ -522,6 +527,7 @@ window.addEventListener('hashchange', router);
 router();
 startSync();
 startPalette();
+startUpdates();
 
 navigator.storage?.persist?.();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {

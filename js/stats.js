@@ -5,6 +5,7 @@ import * as S from './store.js';
 import { esc, plural } from './ui.js';
 import * as db from './db.js';
 import { storyCard } from './story.js';
+import { duelCard } from './duel.js';
 
 const $app = document.getElementById('app');
 const DAY = 86400000;
@@ -89,6 +90,7 @@ export async function statsView() {
   $app.innerHTML = `
     <header class="top"><h1>🏆 Прогресс</h1></header>
     ${await storyCard()}
+    ${await duelCard()}
     <section class="card">
       <h2>⭐ Баллы за неделю</h2>
       <p class="big-num">${s.week}</p>
