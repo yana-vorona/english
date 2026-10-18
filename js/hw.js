@@ -103,6 +103,15 @@ function expandEx(s) {
 }
 
 
+// Ближайший урок после сегодня: вторник, четверг, суббота.
+function nextLesson() {
+  const d = new Date();
+  for (let i = 1; i <= 7; i++) {
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate() + i);
+    if ([2, 4, 6].includes(x.getDay())) return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+  }
+}
+
 async function pullBot() {
   const token = await S.getMeta('tgToken');
   if (!token || !navigator.onLine) return 0;
@@ -134,7 +143,7 @@ async function pullBot() {
     }
     const have = await S.listHw();
     const fresh = found.filter(f => !have.some(h => h.status !== 'done' && h.book === f.book && String(h.page) === f.page && String(h.ex) === f.ex));
-    for (const f of fresh) await S.addHw({ ...f, lesson: null });
+    for (const f of fresh) await S.addHw({ ...f, lesson: nextLesson() });
     added += fresh.length;
     api('sendMessage', {
       chat_id: chat,
