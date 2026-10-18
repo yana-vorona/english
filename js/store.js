@@ -247,6 +247,12 @@ export async function getMeta(id, fallback = null) {
   return m ? m.value : fallback;
 }
 
+// задачи «Фиксить» (meta 'fix:<id>'), новые сверху
+export async function listFixes() {
+  return (await db.getAll('meta')).filter(m => String(m.id).startsWith('fix:') && m.value)
+    .map(m => ({ id: m.id, ...m.value })).sort((a, b) => (b.at || 0) - (a.at || 0));
+}
+
 export async function setMeta(id, value) {
   await db.put('meta', { id, value, updatedAt: now() });
 }

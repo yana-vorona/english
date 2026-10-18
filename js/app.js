@@ -444,6 +444,41 @@ async function settingsView() {
   };
 }
 
+// ---------- 📌 «Фиксить»: что ушло и что ответил Claude (как в штабе) ----------
+
+let fixAll = false;
+async function fixView() {
+  const when = t => t ? new Date(t).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+  const all = await S.listFixes();
+  const open = all.filter(f => !f.seen);
+  const list = fixAll ? all : open;
+  const kind = f => f.seen ? ['d', 'закрыто'] : f.status === 'done' ? ['g', 'Claude ответил - проверь'] : f.status === 'work' ? ['b', 'Claude делает…'] : ['y', 'ждёт Claude'];
+  $app.innerHTML = `
+    <header class="top"><h1>📌 Фиксить</h1></header>
+    <div class="fxlegend"><span class="fxl y">ждёт Claude</span><span class="fxl b">Claude делает</span><span class="fxl g">Claude ответил - проверь и нажми «✓ Отработано»</span><span class="fxl d">закрыто (видно в «Все»)</span></div>
+    <div class="seg"><button data-fxall="0" class="${fixAll ? '' : 'on'}">Не сделано (${open.length})</button><button data-fxall="1" class="${fixAll ? 'on' : ''}">Все (${all.length})</button></div>
+    ${list.map(f => { const [c, t] = kind(f); return `<div class="fxcard fx-${c}">
+      <div class="fxmeta"><span class="tno">Ф${all.length - all.indexOf(f)}</span><span class="fxl ${c}">${t}</span><span class="muted">${when(f.at)}</span></div>
+      <p class="pre">${esc(f.text || '')}</p>
+      ${f.answer ? `<div class="fxans"><span class="by">Claude · ${when(f.doneAt)}</span><div class="pre">${esc(f.answer)}</div></div>` : ''}
+      ${f.status === 'done' && !f.seen ? `<div class="fxrow"><input data-fxre="${esc(f.id)}" placeholder="Дописать Claude по этой задаче…"><button class="talkBtn" data-fxsend="${esc(f.id)}">Отправить</button><button class="talkBtn fxok" data-fxok="${esc(f.id)}">✓ Отработано</button></div>` : ''}
+      ${f.seen ? `<div class="fxrow"><button class="talkBtn" data-fxback="${esc(f.id)}">↩ вернуть</button></div>` : ''}
+    </div>`; }).join('') || `<div class="empty">${fixAll ? 'Пока ничего не отправляла' : 'Всё отработано 🎉'}</div>`}`;
+  $app.querySelectorAll('[data-fxall]').forEach(b => b.onclick = () => { fixAll = b.dataset.fxall === '1'; fixView(); });
+  const byId = id => all.find(f => f.id === id);
+  const save = (f, ch) => { const { id, ...v } = f; return S.setMeta(id, { ...v, ...ch }); };
+  $app.querySelectorAll('[data-fxok]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxok), { seen: Date.now() }); fixView(); });
+  $app.querySelectorAll('[data-fxback]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxback), { seen: 0 }); fixView(); });
+  // ответ по задаче уходит новой задачей со ссылкой на старую - Claude видит прошлые задачи и поймёт, к чему это
+  $app.querySelectorAll('[data-fxsend]').forEach(b => b.onclick = async () => {
+    const f = byId(b.dataset.fxsend), inp = $app.querySelector(`[data-fxre="${CSS.escape(f.id)}"]`), tx = inp.value.trim();
+    if (!tx) { inp.focus(); return; }
+    await S.setMeta('fix:' + S.uid(), { text: `К задаче «${(f.text || '').slice(0, 80)}»: ${tx}`, status: 'new', at: Date.now() });
+    await save(f, { seen: Date.now() });
+    toast('✓ ушло в «Фиксить»'); fixView();
+  });
+}
+
 // ---------- Подключение устройства по ссылке #/connect/<код> ----------
 
 async function connectView(code) {
@@ -464,7 +499,7 @@ async function connectView(code) {
 // Пришли изменения с другого устройства — обновляем экран, если это не занятие.
 window.addEventListener('synced', () => {
   const h = location.hash || '#/';
-  if (/^#?\/?$|^#\/deck\//.test(h)) router();
+  if (/^#?\/?$|^#\/deck\/|^#\/fix$/.test(h)) router();
 });
 
 // ---------- Переходы между экранами ----------
@@ -474,6 +509,7 @@ const routes = [
   [/^#\/deck\/([^/]+)$/, deckView],
   [/^#\/import(?:\/([^/]+))?$/, importView],
   [/^#\/settings$/, settingsView],
+  [/^#\/fix$/, fixView],
   [/^#\/learn\/([^/]+)$/, learnView],
   [/^#\/review\/([^/]+)$/, reviewView],
   [/^#\/connect\/(.+)$/, connectView],
@@ -517,7 +553,9 @@ document.getElementById('fixnsend').onclick = async () => {
   fixn.value = '';
   fixst.textContent = '✓ ушло в «Фиксить»';
   setTimeout(() => { fixst.textContent = ''; }, 4000);
+  if (location.hash === '#/fix') fixView();
 };
+document.getElementById('fixngo').onclick = () => { location.hash = '#/fix'; document.getElementById('stickers').classList.remove('open'); };
 // Слева в нижней полоске — когда сверялись с облаком (как «сверено с Google» в штабе).
 const statusEl = document.getElementById('status');
 const showStatus = () => {

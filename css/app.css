@@ -317,3 +317,21 @@ select.slot.missing { border-color: var(--bad); }
   #app { margin-left: max(256px, calc(50% - 320px)); }
 }
 .hubbar #status { color: var(--muted); }
+/* страница «Фиксить» — цвета стикеров как в штабе: жёлтый ждёт, синий делает, зелёный ответил */
+.fxlegend { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; font-size: 12.5px; }
+.fxl { padding: 3px 9px; border-radius: 7px; border: 1px solid; color: #333; white-space: nowrap; }
+.fxl.y, .fx-y, .fx-d { background: #fffbe0; border-color: #f0e6a8; }
+.fxl.b, .fx-b { background: #e4efff; border-color: #9dbcf0; }
+.fxl.g, .fx-g { background: #e3f6e1; border-color: #9fd39a; }
+.fxl.d { background: #fffbe0; border-color: #f0e6a8; opacity: .55; }
+.fxcard { border: 1px solid; border-radius: 10px; padding: 10px 12px; margin: 10px 0; color: #333; box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+.fxcard.fx-d { opacity: .6; }
+.fxcard p { margin: 6px 0; }
+.fxmeta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; }
+.fxcard .muted { color: #6b6450; }
+.tno { font-family: Consolas, monospace; font-size: 12px; color: #66706a; font-weight: 600; }
+.fxans { background: rgba(255,255,255,.65); border-radius: 8px; padding: 8px 10px; margin-top: 6px; font-size: 14px; }
+.fxans .by { display: block; font-size: 11.5px; color: #6b6450; margin-bottom: 2px; }
+.fxrow { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.fxrow input { flex: 1; min-width: 160px; font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid #cfd3d0; border-radius: 8px; background: #fff; color: #333; }
+.talkBtn.fxok { background: #5cb85c; border-color: #5cb85c; color: #fff; }
