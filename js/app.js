@@ -460,7 +460,7 @@ async function fixView() {
     const c = f.seen ? 'd' : f.status === 'done' ? 'g' : f.status === 'work' ? 'b' : 'y';
     const days = Math.max(0, Math.floor((Date.now() - (f.at || Date.now())) / 864e5));
     return `<div class="fxcard fx-${c}${f.viewed && !f.seen ? ' fx-v' : ''}" data-fx="${esc(f.id)}">
-      <div class="fxmeta"><span class="tno">№${String(num.get(f.id)).padStart(3, '0')}</span>${f.viewed ? '<span class="muted">✓</span>' : ''}
+      <div class="fxmeta"><span class="tno">№${String(num.get(f.id)).padStart(3, '0')}</span>${f.status === 'done' ? `<span class="tick${f.viewed ? ' rd' : ''}" title="${f.viewed ? 'прочитано' : 'не прочитано'}">${f.viewed ? '✓✓' : '✓'}</span>` : ''}
         <span class="fxage">с ${dm(f.at || Date.now())} · ${days} дн.</span></div>
       <a class="fxexp" data-fxexp>▾ развернуть</a>
       <p class="pre fxtext">${esc(f.text || '')}</p>
@@ -468,7 +468,7 @@ async function fixView() {
         ${f.answer ? `<div class="fxans"><span class="by">Claude · ${when(f.doneAt)}</span><div class="pre">${esc(f.answer)}</div></div>` : ''}
         ${f.status === 'done' && !f.seen ? `<div class="fxrow"><input data-fxre="${esc(f.id)}" placeholder="Дописать Claude по этой задаче…"><button class="talkBtn" data-fxsend="${esc(f.id)}">Отправить</button></div>` : ''}
       </div>
-      ${f.status === 'done' && !f.seen ? `<div class="fxrow">${f.viewed ? '' : `<button class="talkBtn" data-fxview="${esc(f.id)}">👁 просмотрено ✓</button>`}<button class="talkBtn fxok" data-fxok="${esc(f.id)}">✓ Отработано</button></div>` : ''}
+      ${f.status === 'done' && !f.seen ? `<div class="fxrow"><button class="talkBtn fxok" data-fxok="${esc(f.id)}">✓ Отработано</button></div>` : ''}
       ${f.seen ? `<div class="fxrow"><button class="talkBtn" data-fxback="${esc(f.id)}">↩ вернуть</button></div>` : ''}
     </div>`;
   };
@@ -496,14 +496,24 @@ async function fixView() {
   };
   $app.querySelector('#fxnewbtn').onclick = addNew;
   $app.querySelector('#fxnew').onkeydown = e => { if (e.key === 'Enter') addNew(); };
-  $app.querySelectorAll('[data-fxexp]').forEach(a => a.onclick = () => {
-    const c = a.closest('.fxcard'); c.classList.toggle('open'); a.textContent = c.classList.contains('open') ? '▴ свернуть' : '▾ развернуть';
+  // нажатие в любом месте стикера раскрывает его; открыла ответ — ✓ становится ✓✓ (прочитано), как в Telegram
+  $app.querySelectorAll('.fxcard').forEach(c => c.onclick = async e => {
+    if (e.target.closest('button, input, textarea')) return;
+    c.classList.toggle('open');
+    c.querySelector('[data-fxexp]').textContent = c.classList.contains('open') ? '▴ свернуть' : '▾ развернуть';
+    const f = byId(c.dataset.fx);
+    if (c.classList.contains('open') && f.status === 'done' && !f.viewed) {
+      f.viewed = Date.now();
+      const t = c.querySelector('.tick'); t.textContent = '✓✓'; t.classList.add('rd'); t.title = 'прочитано';
+      const n = $app.querySelector('.fxbar b'); n.textContent = Math.max(0, +n.textContent - 1);
+      await save(f, { viewed: f.viewed });
+      fixStickers();
+    }
   });
   $app.querySelector('#fxcloseall')?.addEventListener('click', async () => {
     for (const f of toClose) await save(f, { seen: Date.now() });
     fixView(); fixStickers();
   });
-  $app.querySelectorAll('[data-fxview]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxview), { viewed: Date.now() }); fixView(); fixStickers(); });
   $app.querySelectorAll('[data-fxok]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxok), { seen: Date.now() }); fixView(); fixStickers(); });
   $app.querySelectorAll('[data-fxback]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxback), { seen: 0 }); fixView(); fixStickers(); });
   // ответ по задаче уходит новой задачей со ссылкой на старую - Claude видит прошлые задачи и поймёт, к чему это

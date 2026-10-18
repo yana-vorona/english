@@ -258,7 +258,8 @@ export async function hwRun(id) {
 
   const slots = slotsOf(c);
   const answers = h.answers || [];
-  const checked = h.status === 'done';
+  const checked = h.status === 'done' && !!h.result; // отмеченное «✓ Сделала» без проверки — открываем как обычное упражнение
+  const manualDone = h.status === 'done' && !h.result;
   const mins = h.minutes || estimate(c, factor);
   const diff = h.difficulty || defaultDifficulty(c);
 
@@ -303,13 +304,14 @@ export async function hwRun(id) {
     $app.innerHTML = `
       <header class="top"><a class="back" href="${back}">‹</a><h1 class="grow">${esc(title(h))}</h1><button class="icon" id="del">🗑</button></header>
       <p class="muted">⏱ ~${mins} мин · ${DIFF[diff]} · ${esc(formatOf(c))}${h.lesson ? ` · к уроку ${esc(fmtDate(h.lesson))}` : ''}</p>
+      ${manualDone ? '<p class="card">✅ Отмечено, что сделала (в тетради). Можно посмотреть или пройти здесь с проверкой.</p>' : ''}
       ${c.instruction ? `<p class="instr">${esc(c.instruction)}</p>` : ''}
       ${textBlock}
       ${items ? `<ol class="hwitems">${items}</ol>` : ''}
       <p class="warn" id="left"></p>
       ${checked ? afterCheck() : '<button class="btn primary wide" id="check">✅ Проверить</button>'}
       <button class="btn wide" id="copy">📋 Скопировать ответы</button>
-      ${checked ? '' : '<button class="btn ghost wide" id="manual">✓ Уже сделала (в тетради)</button>'}
+      ${checked || manualDone ? '' : '<button class="btn ghost wide" id="manual">✓ Уже сделала (в тетради)</button>'}
       ${checked ? '<button class="btn ghost wide" id="redo">🔄 Пройти заново</button>' : ''}`;
     bind();
   };
@@ -433,7 +435,7 @@ function freeRun(h) {
     <header class="top"><a class="back" href="#/hw">‹</a><h1 class="grow">${esc(title(h))}</h1><button class="icon" id="del">🗑</button></header>
     ${h.lesson ? `<p class="muted">к уроку ${esc(fmtDate(h.lesson))}</p>` : ''}
     <div class="chat">
-      ${h.chat.map(m => `<div class="msg ${m.me ? 'me' : 'cl'}">${m.me ? '' : '<b>🦊 Claude</b>'}<div class="pre">${esc(m.text)}</div><span class="when">${hm(m.at)}</span></div>`).join('')
+      ${h.chat.map(m => `<div class="msg ${m.me ? 'me' : 'cl'}">${m.me ? '' : '<b>🦊 Claude</b>'}<div class="pre">${esc(m.text).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</div><span class="when">${hm(m.at)}</span></div>`).join('')
         || '<p class="muted center">Напиши, что сделала и что поняла — Claude дополнит и задаст пару вопросов.</p>'}
       ${waiting ? '<div class="msg cl wait">🦊 Claude пишет… (минута-две)</div>' : ''}
     </div>
