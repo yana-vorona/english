@@ -529,6 +529,19 @@ startSync();
 startPalette();
 startUpdates();
 
+// Жёлтый стикер «Фиксить» в углу (как в штабе): написать, что поправить в приложении.
+const fixBtn = document.createElement('button');
+fixBtn.className = 'fix-sticker';
+fixBtn.title = 'Фиксить';
+fixBtn.textContent = '🛠';
+fixBtn.onclick = async () => {
+  const text = await ask('🛠 Что поправить или добавить в приложении?', '', 'Отправить');
+  if (!text) return;
+  await S.setMeta('fix:' + S.uid(), { text, status: 'new', at: Date.now() });
+  toast('Отправила 🛠 Ответ придёт в Telegram и в Настройки');
+};
+document.body.append(fixBtn);
+
 navigator.storage?.persist?.();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('./sw.js').catch(() => {});

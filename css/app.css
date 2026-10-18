@@ -280,3 +280,6 @@ select.slot.missing { border-color: var(--bad); }
   border: 2px solid #F28C28; border-radius: 12px; background: linear-gradient(160deg, #FFF4E6, #FFE0BF); color: #3B2A20; font: inherit; font-size: 15px; cursor: pointer; }
 .pcard span { font-weight: 800; color: #C9601B; }
 .pcard:disabled { opacity: .5; }
+.fix-sticker { position: fixed; right: 14px; bottom: calc(92px + env(safe-area-inset-bottom)); z-index: 15;
+  width: 48px; height: 48px; border: 0; border-radius: 12px 12px 12px 2px; background: #fff4a8; color: #3B2A20; font-size: 22px;
+  box-shadow: 0 3px 10px rgba(0,0,0,.18); transform: rotate(-4deg); cursor: pointer; }
