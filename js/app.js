@@ -1,6 +1,6 @@
 import * as S from './store.js';
 import { parseText, readFileRows, guessColumns } from './importer.js';
-import { esc, plural, words, toast } from './ui.js';
+import { esc, plural, words, toast, load, save } from './ui.js';
 import { learnView, reviewView } from './study.js';
 import { syncConfig, syncStatus, syncNow, connect, disconnect, startSync } from './sync.js';
 import { startPalette } from './palette.js';
@@ -38,6 +38,29 @@ function ask(title, value = '', ok = 'Сохранить') {
   });
 }
 
+// «Сколько слов сейчас?» — порция по силам, а не все 60 разом. extra — доп. поля над выбором (темы для микса).
+function howMany(title, max, extra = '') {
+  return new Promise(resolve => {
+    const opts = [5, 10, 15, 20, 30].filter(n => !max || n < max);
+    const d = dialog(`<h3>${title}</h3>${extra}<p class="muted">Сколько слов сейчас?</p>
+      <div class="chips">${opts.map(n => `<button value="${n}" class="btn">${n}</button>`).join('')}${max ? `<button value="${max}" class="btn">все ${max}</button>` : ''}</div>
+      <div class="row rev"><button value="cancel" class="btn ghost" formnovalidate>Отмена</button></div>`);
+    d.addEventListener('close', () => resolve(+d.returnValue ? { n: +d.returnValue, d } : null));
+  });
+}
+
+// 🎲 Микс: случайные слова из выбранных тем (сначала те, что пора повторить).
+async function mixDialog(decks, stats) {
+  const chosen = new Set(load('mixDecks', null) || decks.map(d => d.id));
+  const r = await howMany('🎲 Микс из разных тем', 0, `<div class="mixdecks">${decks.map(d =>
+    `<label><input type="checkbox" value="${d.id}"${chosen.has(d.id) ? ' checked' : ''}> ${esc(d.name)} <span class="muted">(${(stats[d.id] || {}).total || 0})</span></label>`).join('')}</div>`);
+  if (!r) return;
+  const ids = [...r.d.querySelectorAll('.mixdecks input:checked')].map(i => i.value);
+  if (!ids.length) { toast('Отметь хотя бы одну тему'); return; }
+  save('mixDecks', ids);
+  location.hash = `#/review/mix/${r.n}`;
+}
+
 function confirmBox(text, ok = 'Удалить') {
   return new Promise(resolve => {
     const d = dialog(`<p>${text}</p>
@@ -62,12 +85,19 @@ async function home() {
     ${statsBanner(st)}
     ${decks.length ? `<p class="muted">${words(sum.total)} в ${decks.length} ${plural(decks.length, 'теме', 'темах', 'темах')}${sum.due ? ` · <b>🔁 ${sum.due} пора повторить</b>` : ''}</p>`
       : `<div class="empty">Пока нет ни одной темы.<br>Создай тему или загрузи слова 👇</div>`}
-    ${sum.due ? `<a class="btn primary wide" href="#/review/all">🔁 Повторить всё (${sum.due})</a>` : ''}
+    ${sum.due ? `<a class="btn primary wide" href="#/review/all" id="revAll">🔁 Повторить всё (${sum.due})</a>` : ''}
+    ${decks.length ? '<button class="btn wide" id="mix">🎲 Микс из разных тем</button>' : ''}
     <div class="decks">${decks.map(d => deckTile(d, stats[d.id])).join('')}</div>
     <div class="row">
       <button class="btn" data-act="new">➕ Новая тема</button>
       <a class="btn" href="#/import">⬇️ Импорт</a>
     </div>`;
+  $app.querySelector('#revAll')?.addEventListener('click', async e => {
+    e.preventDefault();
+    const r = await howMany('🔁 Повторить всё', sum.due);
+    if (r) location.hash = `#/review/all/${r.n}`;
+  });
+  $app.querySelector('#mix')?.addEventListener('click', () => mixDialog(decks, stats));
   $app.querySelector('[data-act=new]').onclick = async () => {
     const name = await ask('Название новой темы', '', 'Создать');
     if (name) location.hash = '#/deck/' + (await S.createDeck(name)).id;
@@ -132,6 +162,17 @@ async function deckView(id) {
       : `<div class="empty">${cards.length ? 'Ничего не нашлось 🤷' : 'Слов пока нет. Добавь вручную или через импорт.'}</div>`;
   };
   render();
+
+  // «Учить» и «Повторить» — сначала выбрать, сколько слов сейчас
+  const pick = (btn, title, route, count) => btn.addEventListener('click', async e => {
+    e.preventDefault();
+    if (btn.classList.contains('off')) return;
+    const r = await howMany(title, count());
+    if (r) location.hash = `${route}/${id}/${r.n}`;
+  });
+  const t0 = () => Date.now();
+  pick($app.querySelector('#learnBtn'), '🎓 Учить новые', '#/learn', () => cards.filter(c => !c.box).length);
+  pick($app.querySelector('#revBtn'), '🔁 Повторить', '#/review', () => cards.filter(c => c.box >= 1 && c.box < S.LEARNED_BOX && c.due && c.due <= t0()).length);
 
   const form = $app.querySelector('form.add');
   form.onsubmit = async e => {
@@ -566,8 +607,8 @@ const routes = [
   [/^#\/import(?:\/([^/]+))?$/, importView],
   [/^#\/settings$/, settingsView],
   [/^#\/fix$/, fixView],
-  [/^#\/learn\/([^/]+)$/, learnView],
-  [/^#\/review\/([^/]+)$/, reviewView],
+  [/^#\/learn\/([^/]+)(?:\/(\d+))?$/, learnView],
+  [/^#\/review\/([^/]+)(?:\/(\d+))?$/, reviewView],
   [/^#\/connect\/(.+)$/, connectView],
   [/^#\/trainer$/, trainerList],
   [/^#\/trainer\/([^/]+)$/, trainerRun],

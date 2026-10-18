@@ -389,3 +389,10 @@ body.wide #app { max-width: none; margin-right: 16px; }
 #fixmic .micico { display: block; }
 #fixmic.rec { color: #e51400; border-color: #e51400; }
 .talkBtn.fxok { background: #5cb85c; border-color: #5cb85c; color: #fff; }
+/* «Сколько слов сейчас?» и выбор тем для микса */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 12px; }
+.chips .btn { min-width: 56px; }
+.mixdecks { display: flex; flex-direction: column; gap: 6px; max-height: 40vh; overflow: auto; margin-bottom: 4px; }
+.mixdecks label { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.mixdecks input[type=checkbox] { width: 20px; height: 20px; flex: none; margin: 0; padding: 0; box-shadow: none; accent-color: var(--accent); }
+.mixdecks input[type=checkbox] { min-height: 0; max-height: 20px; outline: none; border: 0; }
