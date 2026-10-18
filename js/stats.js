@@ -78,8 +78,8 @@ export async function computeStats() {
 export function statsBanner(s) {
   return `<a class="banner" href="#/stats">
     <span>🔥 ${s.streak} ${plural(s.streak, 'день', 'дня', 'дней')}</span>
-    <span>⭐ ${s.week} ${s.prev ? `<small>(прошлая ${s.prev})</small>` : ''}</span>
-    ${s.boss ? `<span>👾 ${s.bossPct}%</span>` : ''}
+    <span>⭐ ${s.week} ${plural(s.week, 'балл', 'балла', 'баллов')}</span>
+    ${s.boss ? `<span>Фразовые ${s.bossPct}%</span>` : ''}
   </a>`;
 }
 
@@ -103,7 +103,7 @@ export async function statsView() {
       Воскресенье — выходной, и раз в неделю можно пропустить день (заморозка ❄️${s.freezeLeft ? ' пока не потрачена' : ' уже потрачена'}).</p>
     </section>
     ${s.boss ? `<section class="card">
-      <h2>👾 Босс: «Фразовые глаголы» до ${BOSS_GOAL}%</h2>
+      <h2>🎯 Цель: «Фразовые глаголы» до ${BOSS_GOAL}%</h2>
       <div class="bar boss"><i style="width:${Math.min(100, s.bossPct / BOSS_GOAL * 100)}%"></i></div>
       <p class="muted">Сейчас ${s.bossPct}% из ${BOSS_GOAL}%. ${s.bossPct >= BOSS_GOAL ? 'Босс повержен 🏆' : 'Учи по 5 новых и повторяй — шкала растёт с каждой коробкой.'}</p>
     </section>` : ''}
