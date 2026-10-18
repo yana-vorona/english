@@ -19,8 +19,17 @@ function open() {
         if (!db.objectStoreNames.contains('hw')) db.createObjectStore('hw', { keyPath: 'id' });
         if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'id' });
       };
-      r.onsuccess = () => resolve(r.result);
+      r.onsuccess = () => {
+        // Открылась новая версия в другой вкладке — отпускаем хранилище и обновляемся сами.
+        r.result.onversionchange = () => { r.result.close(); location.reload(); };
+        resolve(r.result);
+      };
       r.onerror = () => reject(r.error);
+      // Старая вкладка держит хранилище — просим её закрыть, а не висим молча.
+      r.onblocked = () => {
+        const app = document.getElementById('app');
+        if (app) app.innerHTML = '<div class="empty">⚠️ Приложение открыто ещё в одной вкладке (старой версии).<br>Закрой другие вкладки с приложением — и всё загрузится само.</div>';
+      };
     });
   }
   return dbPromise;
