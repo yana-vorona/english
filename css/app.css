@@ -302,8 +302,10 @@ select.slot.missing { border-color: var(--bad); }
   #stickers:not(.open) textarea, #stickers:not(.open) .fixrow { display: none; }
   #stickers.open { width: min(320px, calc(100vw - 20px)); }
 }
-.hubbar { position: fixed; left: 0; right: 0; bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 9; display: flex; justify-content: space-between;
-  align-items: center; padding: 4px 12px; background: var(--surface); border-top: 1px solid var(--line); font-size: 13px; }
+/* полоска «Обновить» сидит на одном фоне с нижним меню — без линии между ними */
+.hubbar { position: fixed; left: 0; right: 0; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 9; display: flex; justify-content: space-between;
+  align-items: center; padding: 4px 12px 0; background: var(--surface); border-top: 1px solid var(--line); font-size: 13px; }
+.hubbar + .nav { border-top: 0; }
 .hubbar button { border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 8px; padding: 4px 10px; font: inherit; font-size: 13px; cursor: pointer; }
 .hubbar #upd { background: #FFE066; border-color: #e8c840; color: #3B2A20; font-weight: 700; }
 #app { padding-bottom: calc(140px + env(safe-area-inset-bottom)); }
