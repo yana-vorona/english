@@ -518,6 +518,15 @@ document.getElementById('fixnsend').onclick = async () => {
   fixst.textContent = '✓ ушло в «Фиксить»';
   setTimeout(() => { fixst.textContent = ''; }, 4000);
 };
+// Слева в нижней полоске — когда сверялись с облаком (как «сверено с Google» в штабе).
+const statusEl = document.getElementById('status');
+const showStatus = () => {
+  const st = syncStatus();
+  const hm = t => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  statusEl.textContent = !syncConfig() ? 'Облако не подключено' : st ? (st.ok ? `Сверено с облаком в ${hm(st.at)}` : `Облако не ответило в ${hm(st.at)}, повторю сама`) : 'Сверяюсь с облаком…';
+};
+showStatus();
+setInterval(showStatus, 10000);
 // 🎤 голосом — распознавание речи браузера (Chrome).
 document.getElementById('fixmic').onclick = () => {
   const R = window.SpeechRecognition || window.webkitSpeechRecognition;

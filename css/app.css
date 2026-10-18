@@ -307,3 +307,11 @@ select.slot.missing { border-color: var(--bad); }
 .hubbar button { border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 8px; padding: 4px 10px; font: inherit; font-size: 13px; cursor: pointer; }
 .hubbar #upd { background: #FFE066; border-color: #e8c840; color: #3B2A20; font-weight: 700; }
 #app { padding-bottom: calc(140px + env(safe-area-inset-bottom)); }
+/* как в штабе: на ПК серая колонка стикеров во всю высоту слева */
+@media (min-width: 1001px) {
+  #stickers { left: 0; top: 0; bottom: calc(80px + env(safe-area-inset-bottom)); width: 240px; padding: 14px 8px; overflow: auto;
+    background: #f6f7f5; border-right: 1px solid #dde2dc; }
+  .hubbar { left: 240px; }
+  #app { margin-left: max(256px, calc(50% - 320px)); }
+}
+.hubbar #status { color: var(--muted); }
