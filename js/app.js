@@ -467,15 +467,38 @@ async function fixView() {
   $app.querySelectorAll('[data-fxall]').forEach(b => b.onclick = () => { fixAll = b.dataset.fxall === '1'; fixView(); });
   const byId = id => all.find(f => f.id === id);
   const save = (f, ch) => { const { id, ...v } = f; return S.setMeta(id, { ...v, ...ch }); };
-  $app.querySelectorAll('[data-fxok]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxok), { seen: Date.now() }); fixView(); });
-  $app.querySelectorAll('[data-fxback]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxback), { seen: 0 }); fixView(); });
+  $app.querySelectorAll('[data-fxok]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxok), { seen: Date.now() }); fixView(); fixStickers(); });
+  $app.querySelectorAll('[data-fxback]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxback), { seen: 0 }); fixView(); fixStickers(); });
   // ответ по задаче уходит новой задачей со ссылкой на старую - Claude видит прошлые задачи и поймёт, к чему это
   $app.querySelectorAll('[data-fxsend]').forEach(b => b.onclick = async () => {
     const f = byId(b.dataset.fxsend), inp = $app.querySelector(`[data-fxre="${CSS.escape(f.id)}"]`), tx = inp.value.trim();
     if (!tx) { inp.focus(); return; }
     await S.setMeta('fix:' + S.uid(), { text: `К задаче «${(f.text || '').slice(0, 80)}»: ${tx}`, status: 'new', at: Date.now() });
     await save(f, { seen: Date.now() });
-    toast('✓ ушло в «Фиксить»'); fixView();
+    toast('✓ ушло в «Фиксить»'); fixView(); fixStickers();
+  });
+}
+
+// Под жёлтым стикером — что ушло и ответы Claude стикерами (как в штабе): синий делает, зелёный ответил.
+async function fixStickers() {
+  const all = await S.listFixes();
+  const open = all.filter(f => !f.seen).sort((a, b) => (b.doneAt || b.at || 0) - (a.doneAt || a.at || 0));
+  const box = document.getElementById('fxstk');
+  const nAns = open.filter(f => f.status === 'done').length;
+  document.querySelector('.fixhead').textContent = '📌 Фиксить' + (nAns ? ` · ${nAns} ${nAns === 1 ? 'ответ' : nAns < 5 ? 'ответа' : 'ответов'}` : '');
+  box.innerHTML = open.map(f => {
+    const c = f.status === 'done' ? 'g' : f.status === 'work' ? 'b' : 'y';
+    return `<div class="fxst fx-${c}">
+      <div class="fxq">${esc((f.text || '').slice(0, 140))}</div>
+      ${f.status === 'done' ? `<div class="pre">${esc(f.answer || '')}</div><div class="fxrow"><button class="talkBtn fxok" data-stok="${esc(f.id)}">✓ Отработано</button></div>`
+        : `<div class="muted">${f.status === 'work' ? 'Claude делает…' : 'ждёт Claude'}</div>`}
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-stok]').forEach(b => b.onclick = async () => {
+    const { id, ...v } = all.find(f => f.id === b.dataset.stok);
+    await S.setMeta(id, { ...v, seen: Date.now() });
+    fixStickers();
+    if (location.hash === '#/fix') fixView();
   });
 }
 
@@ -500,6 +523,7 @@ async function connectView(code) {
 window.addEventListener('synced', () => {
   const h = location.hash || '#/';
   if (/^#?\/?$|^#\/deck\/|^#\/fix$/.test(h)) router();
+  fixStickers();
 });
 
 // ---------- Переходы между экранами ----------
@@ -554,7 +578,9 @@ document.getElementById('fixnsend').onclick = async () => {
   fixst.textContent = '✓ ушло в «Фиксить»';
   setTimeout(() => { fixst.textContent = ''; }, 4000);
   if (location.hash === '#/fix') fixView();
+  fixStickers();
 };
+fixStickers();
 document.getElementById('fixngo').onclick = () => { location.hash = '#/fix'; document.getElementById('stickers').classList.remove('open'); };
 // Слева в нижней полоске — когда сверялись с облаком (как «сверено с Google» в штабе).
 const statusEl = document.getElementById('status');
