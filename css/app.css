@@ -302,6 +302,10 @@ select.slot.missing { border-color: var(--bad); }
   #stickers:not(.open) .fixnote { padding: 6px 10px; }
   #stickers:not(.open) textarea, #stickers:not(.open) .fixrow { display: none; }
   #stickers.open { width: min(320px, calc(100vw - 20px)); }
+  /* свёрнутый стикер сидит прямо на полоске «Обновить», а не над текстом */
+  #stickers:not(.open) { bottom: calc(78px + env(safe-area-inset-bottom)); }
+  #stickers:not(.open) .fixnote { padding: 4px 10px; background: var(--bg); border-radius: 8px; }
+  .hubbar { padding-left: 120px; }
 }
 /* полоска «Обновить» сидит на одном фоне с нижним меню — без линии между ними */
 .hubbar { position: fixed; left: 0; right: 0; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 9; display: flex; justify-content: space-between;
