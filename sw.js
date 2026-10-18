@@ -1,9 +1,9 @@
 // Офлайн-режим: сначала пробуем свежую версию из сети, без сети берём сохранённую.
-const CACHE = 'english-app-v12';
+const CACHE = 'english-app-v13';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/app.js', './js/store.js', './js/db.js', './js/importer.js', './js/ui.js', './js/study.js', './js/sync.js', './js/palette.js', './js/trainer.js', './js/hw.js', './js/stats.js', './js/story.js', './sets/index.json',
-  './icons/icon-192.png', './icons/fox-words.svg', './icons/fox-trainer.svg', './icons/fox-hw.svg', './icons/fox-progress.svg', './icons/icon-512.png',
+  './icons/icon-192.png', './icons/fox-words.png', './icons/fox-trainer.png', './icons/fox-hw.png', './icons/fox-progress.png', './icons/icon-512.png',
 ];
 
 self.addEventListener('install', e => {
