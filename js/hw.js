@@ -156,6 +156,13 @@ async function pullBot() {
   return added;
 }
 
+// Подсказка только про те цвета, что есть в списке.
+const HINT = { green: '🟢 легко — можно делать уставшей', yellow: '🟡 средне — не на совсем уставшую голову', red: '🔴 сложно — лучше на свежую голову' };
+function legend(list) {
+  const have = new Set(list.filter(h => h.content).map(h => h.difficulty || defaultDifficulty(h.content)));
+  return ['green', 'yellow', 'red'].filter(k => have.has(k)).map(k => HINT[k]).join('<br>');
+}
+
 // ---------- Список ДЗ ----------
 
 export async function hwList() {
@@ -175,13 +182,13 @@ export async function hwList() {
       <div class="deck-head"><span class="deck-name">${esc(title(h))}</span>
         <span>${c ? `⏱ ~${mins(h)} мин ${DIFF[diff] || ''}` : '⏳'}</span></div>
       <div class="deck-meta">${h.lesson ? `к уроку ${esc(fmtDate(h.lesson))} · ` : ''}${c ? esc(formatOf(c)) : 'жду содержимого — разложу упражнение по кнопкам'}</div>
-      ${h.status === 'done' && h.result ? `<div class="deck-meta">✅ ${h.result.right} из ${h.result.total}</div>` : ''}
+      ${h.status === 'done' ? `<div class="deck-meta">✅ ${h.result ? `${h.result.right} из ${h.result.total}` : 'сделано'}</div>` : ''}
     </a>`;
   };
 
   $app.innerHTML = `
     <header class="top"><h1>📝 Домашка</h1></header>
-    ${todo.length ? `<p class="muted">Осталось ${todo.length} · итого <b>⏱ ~${total} мин</b><br>🟢 можно делать уставшей, 🔴 лучше на свежую голову</p>`
+    ${todo.length ? `<p class="muted">Осталось ${todo.length} · итого <b>⏱ ~${total} мин</b><br>${legend(todo)}</p>`
       : '<div class="empty">Всё сделано 🎉</div>'}
     <div class="decks">${todo.map(card).join('')}</div>
     <button class="btn primary wide" id="add">➕ Добавить ДЗ</button>
@@ -232,8 +239,10 @@ export async function hwRun(id) {
   if (!c) {
     $app.innerHTML = `
       <header class="top"><a class="back" href="${back}">‹</a><h1 class="grow">${esc(title(h))}</h1><button class="icon" id="del">🗑</button></header>
-      <div class="empty">⏳ Упражнение ещё не разложено по кнопкам.<br>Как только будет готово, оно появится здесь само.</div>`;
+      <div class="empty">⏳ Упражнение ещё не разложено по кнопкам.<br>Как только будет готово, оно появится здесь само.</div>
+      ${h.status === 'done' ? '<p class="center">✅ Сделано</p>' : '<button class="btn primary wide" id="manual">✓ Сделала (в тетради, видео…)</button>'}`;
     bindDelete(h);
+    bindManual(h);
     return;
   }
 
@@ -290,6 +299,7 @@ export async function hwRun(id) {
       <p class="warn" id="left"></p>
       ${checked ? afterCheck() : '<button class="btn primary wide" id="check">✅ Проверить</button>'}
       <button class="btn wide" id="copy">📋 Скопировать ответы</button>
+      ${checked ? '' : '<button class="btn ghost wide" id="manual">✓ Уже сделала (в тетради)</button>'}
       ${checked ? '<button class="btn ghost wide" id="redo">🔄 Пройти заново</button>' : ''}`;
     bind();
   };
@@ -313,6 +323,7 @@ export async function hwRun(id) {
 
   const bind = () => {
     bindDelete(h);
+    bindManual(h);
     if (!checked) {
       $app.querySelectorAll('button.ch').forEach(b => b.onclick = async () => {
         await saveAnswer(+b.dataset.s, b.dataset.v);
@@ -394,6 +405,19 @@ export async function hwRun(id) {
   };
 
   render();
+}
+
+// Сделала без приложения: засчитываем (серия, баллы, глава истории), без проверки.
+function bindManual(h) {
+  const b = $app.querySelector('#manual');
+  if (!b) return;
+  b.onclick = async () => {
+    Object.assign(h, { status: 'done', doneAt: Date.now(), manual: true, result: h.result || null,
+      minutes: h.minutes || (h.content ? estimate(h.content) : 5) });
+    await S.saveHw(h);
+    toast('Засчитано ✅ Открылась новая глава 📖');
+    location.hash = '#/hw';
+  };
 }
 
 function bindDelete(h) {

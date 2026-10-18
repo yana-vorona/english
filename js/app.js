@@ -7,6 +7,7 @@ import { startPalette } from './palette.js';
 import { trainerList, trainerRun } from './trainer.js';
 import { hwList, hwRun } from './hw.js';
 import { statsView, computeStats, statsBanner } from './stats.js';
+import { storyView } from './story.js';
 
 const $app = document.getElementById('app');
 
@@ -377,7 +378,7 @@ async function settingsView() {
     <section class="card">
       <h2>☁️ Синхронизация</h2>
       ${cfg ? `<p class="muted">${ss ? (ss.ok ? `✅ Всё сохранено в облаке · ${when(ss.at)}` : `⚠️ Не получилось (${esc(ss.msg)}) · ${when(ss.at)}. Попробую ещё раз сама.`) : 'Подключено, сейчас синхронизирую…'}</p>
-        <div class="row"><button class="btn" id="syncNow">🔄 Синхронизировать сейчас</button><button class="btn ghost" id="syncOff">Отключить</button></div>`
+        <div class="row"><button class="btn" id="syncNow">🔄 Синхронизировать сейчас</button><button class="btn" id="syncAll">⬇️ Загрузить всё заново</button><button class="btn ghost" id="syncOff">Отключить</button></div>`
       : '<p class="muted">Не подключена. Открой на этом устройстве ссылку подключения — и слова появятся здесь сами.</p>'}
     </section>
     <section class="card">
@@ -400,6 +401,11 @@ async function settingsView() {
 
   $app.querySelector('#syncNow')?.addEventListener('click', async () => {
     toast(await syncNow() ? 'Синхронизировано ☁️' : 'Не получилось, проверь интернет');
+    settingsView();
+  });
+  $app.querySelector('#syncAll')?.addEventListener('click', async () => {
+    connect(syncConfig());
+    toast(await syncNow() ? 'Всё загружено из облака ☁️' : 'Облако не ответило, попробуй ещё раз');
     settingsView();
   });
   $app.querySelector('#syncOff')?.addEventListener('click', async () => {
@@ -473,6 +479,7 @@ const routes = [
   [/^#\/trainer\/([^/]+)$/, trainerRun],
   [/^#\/hw$/, hwList],
   [/^#\/stats$/, statsView],
+  [/^#\/story\/(\d+)$/, storyView],
   [/^#\/hw\/([^/]+)$/, hwRun],
 ];
 
@@ -481,7 +488,7 @@ async function router() {
   for (const [re, fn] of routes) {
     const m = h.match(re);
     if (m) {
-      const section = h.startsWith('#/settings') ? '#/settings' : h.startsWith('#/trainer') ? '#/trainer' : h.startsWith('#/hw') ? '#/hw' : h.startsWith('#/stats') ? '#/stats' : '#/';
+      const section = h.startsWith('#/settings') ? '#/settings' : h.startsWith('#/trainer') ? '#/trainer' : h.startsWith('#/hw') ? '#/hw' : (h.startsWith('#/stats') || h.startsWith('#/story')) ? '#/stats' : '#/';
       document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === section));
       await fn(...m.slice(1));
       window.scrollTo(0, 0);

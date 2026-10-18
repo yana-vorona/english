@@ -4,6 +4,7 @@
 import * as S from './store.js';
 import { esc, plural } from './ui.js';
 import * as db from './db.js';
+import { storyCard } from './story.js';
 
 const $app = document.getElementById('app');
 const DAY = 86400000;
@@ -87,6 +88,7 @@ export async function statsView() {
   const diff = s.week - s.prev;
   $app.innerHTML = `
     <header class="top"><h1>🏆 Прогресс</h1></header>
+    ${await storyCard()}
     <section class="card">
       <h2>⭐ Баллы за неделю</h2>
       <p class="big-num">${s.week}</p>
