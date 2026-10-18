@@ -59,7 +59,7 @@ async function home() {
   const [decks, stats, st] = await Promise.all([S.listDecks(), S.allStats(), computeStats()]);
   const sum = Object.values(stats).reduce((a, s) => ({ total: a.total + s.total, due: a.due + s.due }), { total: 0, due: 0 });
   $app.innerHTML = `
-    <header class="top"><h1>📚 Мои слова</h1></header>
+    <header class="top"><h1 class="fh"><img src="icons/fox-words.png" alt="">Мои слова</h1></header>
     ${statsBanner(st)}
     ${decks.length ? `<p class="muted">${words(sum.total)} в ${decks.length} ${plural(decks.length, 'теме', 'темах', 'темах')}${sum.due ? ` · <b>🔁 ${sum.due} пора повторить</b>` : ''}</p>`
       : `<div class="empty">Пока нет ни одной темы.<br>Создай тему или загрузи слова 👇</div>`}

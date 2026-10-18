@@ -29,7 +29,7 @@ export async function trainerList() {
   let sets = [];
   try { sets = await getJSON('sets/index.json'); } catch {}
   $app.innerHTML = `
-    <header class="top"><h1>🎯 Тренажёр</h1></header>
+    <header class="top"><h1 class="fh"><img src="icons/fox-trainer.png" alt="">Тренажёр</h1></header>
     ${sets.length ? '' : '<div class="empty">Наборов пока нет.</div>'}
     <div class="decks">${sets.map(s => `
       <a class="deck" href="#/trainer/${encodeURIComponent(s.file)}">

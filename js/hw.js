@@ -187,7 +187,7 @@ export async function hwList() {
   };
 
   $app.innerHTML = `
-    <header class="top"><h1>📝 Домашка</h1></header>
+    <header class="top"><h1 class="fh"><img src="icons/fox-hw.png" alt="">Домашка</h1></header>
     ${todo.length ? `<p class="muted">Осталось ${todo.length} · итого <b>⏱ ~${total} мин</b><br>${legend(todo)}</p>`
       : '<div class="empty">Всё сделано 🎉</div>'}
     <div class="decks">${todo.map(card).join('')}</div>

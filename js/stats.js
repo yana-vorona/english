@@ -88,7 +88,7 @@ export async function statsView() {
   const wd = t => new Date(t).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric' });
   const diff = s.week - s.prev;
   $app.innerHTML = `
-    <header class="top"><h1>🏆 Прогресс</h1></header>
+    <header class="top"><h1 class="fh"><img src="icons/fox-progress.png" alt="">Прогресс</h1></header>
     ${await storyCard()}
     ${await duelCard()}
     <section class="card">
