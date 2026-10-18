@@ -334,4 +334,7 @@ select.slot.missing { border-color: var(--bad); }
 .fxans .by { display: block; font-size: 11.5px; color: #6b6450; margin-bottom: 2px; }
 .fxrow { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .fxrow input { flex: 1; min-width: 160px; font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid #cfd3d0; border-radius: 8px; background: #fff; color: #333; }
+#fixmic { display: inline-flex; align-items: center; justify-content: center; padding: 6px 8px; }
+#fixmic .micico { display: block; }
+#fixmic.rec { color: #e51400; border-color: #e51400; }
 .talkBtn.fxok { background: #5cb85c; border-color: #5cb85c; color: #fff; }

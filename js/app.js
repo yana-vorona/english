@@ -572,8 +572,10 @@ document.getElementById('fixmic').onclick = () => {
   const r = new R();
   r.lang = 'ru-RU';
   r.onresult = e => { fixn.value = (fixn.value ? fixn.value + ' ' : '') + e.results[0][0].transcript; };
-  r.onend = () => { fixst.textContent = ''; };
-  fixst.textContent = '🎤 слушаю…';
+  const mic = document.getElementById('fixmic');
+  r.onend = () => { fixst.textContent = ''; mic.classList.remove('rec'); };
+  mic.classList.add('rec');
+  fixst.textContent = 'слушаю…';
   r.start();
 };
 
