@@ -28,14 +28,41 @@ const pairOf = it => it.pair || it.answer;
 export async function trainerList() {
   let sets = [];
   try { sets = await getJSON('sets/index.json'); } catch {}
+  const topics = await S.listTopics();
   $app.innerHTML = `
     <header class="top"><h1 class="fh"><img src="icons/fox-trainer.png" alt="">Тренажёр</h1></header>
-    ${sets.length ? '' : '<div class="empty">Наборов пока нет.</div>'}
-    <div class="decks">${sets.map(s => `
+    <section class="card">
+      <h2>✍️ Что хочу подтянуть</h2>
+      <p class="muted">Напиши своими словами, например «путаю Past simple и Present perfect» или «когда ставить the». Claude придумает упражнения, через пару минут они появятся здесь.</p>
+      <div class="fxadd"><input id="ttnew" placeholder="Что подтянуть…"><button class="talkBtn" id="ttadd">Добавить</button></div>
+    </section>
+    <div class="decks">${topics.map(t => t.set ? `
+      <a class="deck" href="#/trainer/${encodeURIComponent(t.id)}">
+        <div class="deck-head"><span class="deck-name">${esc(t.set.title || t.text)}</span><button class="icon" data-ttdel="${esc(t.id)}" title="убрать">✕</button></div>
+        <div class="deck-meta">✍️ моя тема · ${(t.set.items || []).length} ${plural((t.set.items || []).length, 'вопрос', 'вопроса', 'вопросов')}</div>
+      </a>` : `
+      <div class="deck"><div class="deck-head"><span class="deck-name">${esc(t.text)}</span><button class="icon" data-ttdel="${esc(t.id)}" title="убрать">✕</button></div>
+        <div class="deck-meta">⏳ Claude готовит упражнения…</div></div>`).join('')}
+    ${sets.map(s => `
       <a class="deck" href="#/trainer/${encodeURIComponent(s.file)}">
         <div class="deck-head"><span class="deck-name">${esc(s.title)}</span></div>
       </a>`).join('')}</div>
-    <p class="muted">Ошибки и «🔵 не уверена» сами попадают в тему «🎯 Тренажёр» и приходят на повторение.</p>`;
+    <p class="muted">Ошибки и «🔵 не уверена» сами попадают в тему «🎯 Тренажёр» и приходят на повторение. Твои темы идут и в мини-задания, если урок отменили.</p>`;
+  const add = async () => {
+    const inp = $app.querySelector('#ttnew'), text = inp.value.trim();
+    if (!text) { inp.focus(); return; }
+    await S.setMeta('tt:' + S.uid(), { text, status: 'new', at: Date.now() });
+    trainerList();
+  };
+  $app.querySelector('#ttadd').onclick = add;
+  $app.querySelector('#ttnew').onkeydown = e => { if (e.key === 'Enter') add(); };
+  $app.querySelectorAll('[data-ttdel]').forEach(b => b.onclick = async e => {
+    e.preventDefault(); e.stopPropagation();
+    const t = topics.find(x => x.id === b.dataset.ttdel);
+    const { id, ...v } = t;
+    await S.setMeta(id, { ...v, deleted: Date.now() });
+    trainerList();
+  });
 }
 
 // ---------- Раунд ----------
@@ -43,7 +70,8 @@ export async function trainerList() {
 export async function trainerRun(file, onlyPairs = null) {
   const back = '#/trainer';
   let set;
-  try { set = await getJSON('sets/' + decodeURIComponent(file)); }
+  const name = decodeURIComponent(file);
+  try { set = name.startsWith('tt:') ? (await S.getMeta(name)).set : await getJSON('sets/' + name); if (!set) throw 0; }
   catch { $app.innerHTML = `<div class="empty">Не получилось открыть набор 😕</div><a class="btn wide" href="${back}">Назад</a>`; return; }
 
   const byPair = new Map();

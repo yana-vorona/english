@@ -6,6 +6,7 @@ import { esc, plural } from './ui.js';
 import * as db from './db.js';
 import { storyCard } from './story.js';
 import { duelCard } from './duel.js';
+import { lessonStreak, lessonsCard, bindLessons } from './lessons.js';
 
 const $app = document.getElementById('app');
 const DAY = 86400000;
@@ -72,12 +73,13 @@ export async function computeStats() {
     plan.push({ day: from, words: take, minutes: Math.ceil(take / WORDS_PER_MIN) });
   }
   const todayDone = active.has(dayKey(today));
-  return { week: Math.round(week), prev: Math.round(prev), streak, freezeLeft, todayDone, boss: !!boss, bossPct, plan };
+  const hwStreak = await lessonStreak();
+  return { week: Math.round(week), prev: Math.round(prev), streak, freezeLeft, todayDone, boss: !!boss, bossPct, plan, hwStreak };
 }
 
 export function statsBanner(s) {
   return `<a class="banner" href="#/stats">
-    <span>🔥 ${s.streak} ${plural(s.streak, 'день', 'дня', 'дней')}</span>
+    <span>🔥 ${s.hwStreak} ДЗ подряд</span>
     <span>⭐ ${s.week} ${plural(s.week, 'балл', 'балла', 'баллов')}</span>
     ${s.boss ? `<span>Фразовые ${s.bossPct}%</span>` : ''}
   </a>`;
@@ -97,11 +99,7 @@ export async function statsView() {
       <p class="muted">Прошлая неделя: ${s.prev}. ${s.prev ? (diff >= 0 ? `Уже обгоняешь на ${diff} 💪` : `До прошлой недели ${-diff} — догонишь 😉`) : 'Это первая неделя — всё впереди 🌱'}</p>
       <p class="muted">1 минута занятий = 1 балл, 🔴 задания ×2.</p>
     </section>
-    <section class="card">
-      <h2>🔥 Серия: ${s.streak} ${plural(s.streak, 'день', 'дня', 'дней')}</h2>
-      <p class="muted">${s.todayDone ? 'Сегодня уже занималась ✅' : 'Сегодня ещё не занималась — хватит и 5 минут.'}
-      Воскресенье — выходной, и раз в неделю можно пропустить день (заморозка ❄️${s.freezeLeft ? ' пока не потрачена' : ' уже потрачена'}).</p>
-    </section>
+    ${await lessonsCard()}
     ${s.boss ? `<section class="card">
       <h2>🎯 Цель: «Фразовые глаголы» до ${BOSS_GOAL}%</h2>
       <div class="bar boss"><i style="width:${Math.min(100, s.bossPct / BOSS_GOAL * 100)}%"></i></div>
@@ -114,4 +112,5 @@ export async function statsView() {
         <span>${p.words ? `🔁 ${p.words} · ~${p.minutes} мин` : '—'}</span></div>`).join('')}</div>
       <p class="muted">Не больше ~10 минут в день: если накопилось много, раскладываю на несколько дней.</p>
     </section>`;
+  bindLessons($app, statsView);
 }

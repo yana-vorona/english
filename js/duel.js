@@ -1,8 +1,9 @@
-// «Лисья дуэль» с Енотом Бруно. Каждая сделанная за неделю ДЗ = набор из 3 карт (слова, которые Яна уже учила).
-// У Бруно — наборы за все уроки недели (вт/чт/сб). 5 раундов: выбираешь карту, отвечаешь перевод —
+// «Лисья дуэль» с Енотом Бруно. Каждый урок недели, к которому сделаны все ДЗ, = набор из 3 карт (слова, которые Яна уже учила).
+// У Бруно — наборы за все уроки недели (дни из настроек, отменённые не в счёт). 5 раундов: выбираешь карту, отвечаешь перевод —
 // верно: сила ×2, неверно: карта сгорает. Бруно играет свою карту. Настоящая дуэль — в воскресенье, с недели 19.10.
 import * as S from './store.js';
 import { esc, toast } from './ui.js';
+import { weekLessons } from './lessons.js';
 
 const $app = document.getElementById('app');
 const DAY = 86400000;
@@ -41,9 +42,9 @@ async function pool() {
 
 export async function duelState() {
   const ws = weekStart(Date.now());
-  const done = (await S.listHw()).filter(h => h.status === 'done' && h.doneAt >= ws).length;
+  const wl = await weekLessons(ws);   // набор карт = урок, к которому сделаны все ДЗ (или мини-задание)
   const played = await S.getMeta('duel:' + ws);
-  return { ws, sets: done, real: ws >= FIRST_WEEK, sunday: new Date().getDay() === 0, played };
+  return { ws, sets: wl.done, rival: wl.total || LESSONS_PER_WEEK, real: ws >= FIRST_WEEK, sunday: new Date().getDay() === 0, played };
 }
 
 export async function duelCard() {
@@ -53,7 +54,7 @@ export async function duelCard() {
     d.sunday ? 'Сегодня воскресенье — Бруно ждёт! 🦝' : 'Дуэль — в воскресенье.';
   return `<section class="card">
     <h2>🃏 Лисья дуэль с Енотом Бруно</h2>
-    <p class="muted">У тебя на этой неделе: ${d.sets * 3} карт (${d.sets} из ${LESSONS_PER_WEEK} ДЗ). ${when}</p>
+    <p class="muted">У тебя на этой неделе: ${d.sets * 3} карт (${d.sets} из ${d.rival} уроков). ${when}</p>
     <div class="row">
       ${d.real && d.sunday && !d.played ? '<a class="btn primary grow" href="#/duel/real">⚔️ В бой!</a>' : ''}
       <a class="btn grow" href="#/duel/practice">🎲 Пробная дуэль</a>
@@ -71,7 +72,7 @@ export async function duelView(mode) {
   }
   const r = real ? rng(d.ws / DAY) : Math.random;
   const mySets = real ? d.sets : 2;
-  const deck = pick(all, mySets * 3 + LESSONS_PER_WEEK * 3, r);
+  const deck = pick(all, mySets * 3 + (real ? d.rival : LESSONS_PER_WEEK) * 3, r);
   let hand = deck.slice(0, mySets * 3);
   let bruno = deck.slice(mySets * 3);
   let me = 0, him = 0, round = 1, line = say('start');

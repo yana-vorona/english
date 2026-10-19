@@ -396,3 +396,12 @@ body.wide #app { max-width: none; margin-right: 16px; }
 .mixdecks label { display: flex; align-items: center; gap: 8px; font-size: 15px; }
 .mixdecks input[type=checkbox] { width: 20px; height: 20px; flex: none; margin: 0; padding: 0; box-shadow: none; accent-color: var(--accent); }
 .mixdecks input[type=checkbox] { min-height: 0; max-height: 20px; outline: none; border: 0; }
+/* серия по домашкам: ближайшие уроки */
+.lessons { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 10px; }
+.lrow { display: grid; grid-template-columns: 74px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 10px; background: var(--bg); font-size: 14px; }
+.lrow.today { outline: 2px solid var(--accent); }
+.lrow .ld { font-weight: 700; } .lrow .lb { display: flex; gap: 4px; }
+.lrow .talkBtn { padding: 3px 7px; font-size: 14px; }
+.ldays { display: flex; flex-wrap: wrap; gap: 6px; }
+.ldays .talkBtn { min-width: 40px; }
+.ldays .talkBtn.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }

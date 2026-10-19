@@ -595,7 +595,7 @@ async function connectView(code) {
 // Пришли изменения с другого устройства — обновляем экран, если это не занятие.
 window.addEventListener('synced', () => {
   const h = location.hash || '#/';
-  if (/^#?\/?$|^#\/deck\/|^#\/fix$/.test(h)) router();
+  if (/^#?\/?$|^#\/deck\/|^#\/fix$|^#\/trainer$|^#\/hw$/.test(h)) router();
   fixStickers();
 });
 

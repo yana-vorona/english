@@ -253,6 +253,12 @@ export async function listFixes() {
     .map(m => ({ id: m.id, ...m.value })).sort((a, b) => (b.at || 0) - (a.at || 0));
 }
 
+// темы тренажёра «что хочу подтянуть» (meta 'tt:<id>'): Claude на ПК готовит по ним упражнения (value.set)
+export async function listTopics() {
+  return (await db.getAll('meta')).filter(m => String(m.id).startsWith('tt:') && m.value && !m.value.deleted)
+    .map(m => ({ id: m.id, ...m.value })).sort((a, b) => (b.at || 0) - (a.at || 0));
+}
+
 export async function setMeta(id, value) {
   await db.put('meta', { id, value, updatedAt: now() });
 }

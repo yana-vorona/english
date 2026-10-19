@@ -8,6 +8,7 @@
 import * as S from './store.js';
 import { esc, toast } from './ui.js';
 import { syncNow } from './sync.js';
+import { getCfg, nextLessonOf } from './lessons.js';
 
 const $app = document.getElementById('app');
 const BOOK = { 'РТ': 'РТ', 'Уч': 'Уч' };
@@ -106,13 +107,7 @@ function expandEx(s) {
 
 
 // Ближайший урок после сегодня: вторник, четверг, суббота.
-function nextLesson() {
-  const d = new Date();
-  for (let i = 1; i <= 7; i++) {
-    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate() + i);
-    if ([2, 4, 6].includes(x.getDay())) return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
-  }
-}
+const nextLesson = async () => nextLessonOf(await getCfg());
 
 async function pullBot() {
   const token = await S.getMeta('tgToken');
@@ -197,10 +192,10 @@ export async function hwList() {
   $app.querySelector('#add').onclick = addDialog;
 }
 
-function addDialog() {
+async function addDialog() {
   const d = document.createElement('dialog');
   d.className = 'dlg';
-  const today = nextLesson();
+  const today = await nextLesson();
   d.innerHTML = `<form method="dialog">
     <h3>Новое ДЗ</h3>
     <div class="seg book three"><button type="button" data-b="РТ" class="on">📒 РТ</button><button type="button" data-b="Уч">📘 Учебник</button><button type="button" data-b="free">✍️ Своё</button></div>
