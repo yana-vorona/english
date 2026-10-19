@@ -47,10 +47,11 @@ export function lessonStatus(L, hw, cfg) {
 export async function lessonStreak() {
   const [cfg, hw] = await Promise.all([getCfg(), S.listHw()]);
   const today = ymd(new Date());
-  const dates = lessonDates(cfg, ymd(new Date(Date.now() - 200 * DAY)), today).reverse();
+  const dates = lessonDates(cfg, ymd(new Date(Date.now() - 200 * DAY)), ymd(new Date(Date.now() + 21 * DAY))).reverse();
   let n = 0;
   for (const L of dates) {
     const st = lessonStatus(L, hw, cfg);
+    if (L > today && st !== 'done') continue;    // будущий урок: сделанное заранее идёт в серию, остальное ещё не срок
     if (st === 'done') n++;
     else if (st === 'todo' && L < today) break;   // к прошедшему уроку ДЗ не сделано — серия с нуля
   }

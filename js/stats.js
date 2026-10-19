@@ -7,6 +7,7 @@ import * as db from './db.js';
 import { storyCard } from './story.js';
 import { duelCard } from './duel.js';
 import { lessonStreak, lessonsCard, bindLessons } from './lessons.js';
+import { petCard } from './pet.js';
 
 const $app = document.getElementById('app');
 const DAY = 86400000;
@@ -91,6 +92,7 @@ export async function statsView() {
   const diff = s.week - s.prev;
   $app.innerHTML = `
     <header class="top"><h1 class="fh"><img src="icons/fox-progress.png" alt="">Прогресс</h1></header>
+    ${await petCard()}
     ${await storyCard()}
     ${await duelCard()}
     <section class="card">

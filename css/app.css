@@ -405,3 +405,9 @@ body.wide #app { max-width: none; margin-right: 16px; }
 .ldays { display: flex; flex-wrap: wrap; gap: 6px; }
 .ldays .talkBtn { min-width: 40px; }
 .ldays .talkBtn.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+/* питомец */
+.card.pet { display: flex; gap: 14px; align-items: center; }
+.petimg { width: 96px; height: 96px; flex: none; animation: petbob 3s ease-in-out infinite; }
+.petimg.sad { filter: grayscale(.6) brightness(.95); transform: rotate(-8deg); animation: none; }
+.card.pet h2 { margin: 0 0 4px; } .card.pet p { margin: 2px 0; }
+@keyframes petbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
