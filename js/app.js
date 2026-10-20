@@ -672,17 +672,30 @@ const showStatus = () => {
 };
 showStatus();
 setInterval(showStatus, 10000);
-// 🎤 голосом — распознавание речи браузера (Chrome).
+// 🎤 голосом — распознавание речи браузера (Chrome). Слушает, пока не нажмёшь микрофон ещё раз:
+// браузер сам обрывает запись после паузы — тогда тихо запускаем заново.
+let fixRec = null;
 document.getElementById('fixmic').onclick = () => {
+  const mic = document.getElementById('fixmic');
+  if (fixRec) { fixRec.stopped = true; fixRec.stop(); return; }
   const R = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!R) { toast('Голосовой ввод в этом браузере не работает'); return; }
-  const r = new R();
+  const r = fixRec = new R();
   r.lang = 'ru-RU';
-  r.onresult = e => { fixn.value = (fixn.value ? fixn.value + ' ' : '') + e.results[0][0].transcript; };
-  const mic = document.getElementById('fixmic');
-  r.onend = () => { fixst.textContent = ''; mic.classList.remove('rec'); };
+  r.continuous = true;
+  r.onresult = e => {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) fixn.value = (fixn.value ? fixn.value + ' ' : '') + e.results[i][0].transcript.trim();
+    }
+  };
+  r.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture') r.stopped = true; };
+  r.onend = () => {
+    if (!r.stopped) { try { r.start(); return; } catch {} }
+    fixRec = null;
+    fixst.textContent = ''; mic.classList.remove('rec');
+  };
   mic.classList.add('rec');
-  fixst.textContent = 'слушаю…';
+  fixst.textContent = 'слушаю… нажми 🎙, чтобы остановить';
   r.start();
 };
 

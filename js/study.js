@@ -15,8 +15,10 @@ const shuffle = arr => {
   return a;
 };
 
+// 🔇 в углу экрана занятия выключает озвучку (запоминается).
+const muted = () => load('mute', false);
 function say(text) {
-  if (!('speechSynthesis' in window)) return;
+  if (muted() || !('speechSynthesis' in window)) return;
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'en-GB';
   speechSynthesis.cancel();
@@ -55,9 +57,15 @@ function frame(back, title, part, extra = '') {
       <a class="back close" href="${back}" aria-label="Закрыть">✕</a>
       <div class="grow bar"><i style="width:${Math.round(part * 100)}%"></i></div>
       ${extra}
+      <button type="button" class="icon" id="mute" aria-label="Звук">${muted() ? '🔇' : '🔊'}</button>
     </header>
     <h2 class="mode">${title}</h2>
     <div id="ex"></div>`;
+  $app.querySelector('#mute').onclick = e => {
+    save('mute', !muted());
+    if (muted()) speechSynthesis?.cancel();
+    e.currentTarget.textContent = muted() ? '🔇' : '🔊';
+  };
   const ex = $app.querySelector('#ex');
   ex.addEventListener('click', e => {
     const b = e.target.closest('[data-say]');
@@ -119,16 +127,18 @@ const RUN = {
     ex.onclick = e => {
       const b = e.target.closest('.pb');
       if (!b || b.disabled) return;
+      // английское слово звучит всегда — и первым нажатием, и вторым
+      if (b.dataset.side === 'en') say(b.textContent);
       if (sel === b) { b.classList.remove('sel'); sel = null; return; }
       if (!sel || sel.dataset.side === b.dataset.side) {
         sel?.classList.remove('sel');
         sel = b; b.classList.add('sel');
-        if (b.dataset.side === 'en') say(b.textContent);
         return;
       }
       const a = sel; sel = null; a.classList.remove('sel');
       if (a.dataset.id === b.dataset.id) {
-        [a, b].forEach(x => { x.classList.add('ok'); x.disabled = true; });
+        // найденная пара исчезает, чтобы не мешалась
+        [a, b].forEach(x => { x.classList.add('ok'); x.disabled = true; setTimeout(() => x.remove(), 400); });
         if (--left === 0) setTimeout(() => resolve(true), 500);
       } else {
         [a, b].forEach(x => x.classList.add('bad'));
@@ -142,14 +152,14 @@ const RUN = {
       <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div></div>
       <div class="opts">${options(c, pool).map(o => `<button class="opt">${esc(o)}</button>`).join('')}</div>
       <div id="after"></div><p class="muted center">Осталось: ${left}</p>`;
-    let answered = false;
+    // Ошибка: правильный не подсвечиваем — тыкаешь дальше, пока не найдёшь; слово с ошибкой вернётся в конец.
+    let missed = false;
     ex.querySelectorAll('.opt').forEach(b => b.onclick = () => {
-      if (answered) return;
-      answered = true;
-      const right = b.textContent === c.ru;
-      ex.querySelectorAll('.opt').forEach(x => { if (x.textContent === c.ru) x.classList.add('ok'); });
-      if (right) setTimeout(() => done(false), 600);
-      else { b.classList.add('bad'); nextButton(ex.querySelector('#after'), () => done(true)); }
+      if (b.disabled) return;
+      if (b.textContent !== c.ru) { missed = true; b.classList.add('bad'); b.disabled = true; return; }
+      ex.querySelectorAll('.opt').forEach(x => { x.disabled = true; });
+      b.classList.add('ok');
+      setTimeout(() => done(missed), missed ? 900 : 600);
     });
   }),
 
@@ -179,26 +189,41 @@ const RUN = {
       </form>
       <div id="res"></div><p class="muted center">Осталось: ${left}</p>`;
     const inp = ex.querySelector('#ans');
-    let hints = 0, checked = false;
+    const res = ex.querySelector('#res');
+    // Ошибка: ответ не показываем — исправляешь сама; не выходит — 💡 подсказка по букве; после подсказки — «Показать ответ».
+    let hints = 0, missed = false, finished = false;
     inp.focus();
+    inp.oninput = () => inp.classList.remove('bad');
+    const showAnswer = () => {
+      finished = true;
+      ex.querySelector('#btns').innerHTML = '';
+      res.innerHTML = `<p class="answer">Правильно: <b>${esc(c.en)}</b> ${sayBtn(c.en)}</p><div id="nxp"></div>`;
+      say(c.en);
+      nextButton(res.querySelector('#nxp'), () => done(true));
+    };
     ex.querySelector('#hint').onclick = () => {
       hints = Math.min(c.en.length, Math.max(hints, inp.value.length) + 1);
       inp.value = c.en.slice(0, hints);
+      inp.classList.remove('bad');
       inp.focus();
+      if (!res.querySelector('#reveal')) {
+        res.innerHTML = '<button type="button" class="btn wide" id="reveal">👀 Показать ответ</button>';
+        res.querySelector('#reveal').onclick = showAnswer;
+      }
     };
     ex.querySelector('form').onsubmit = e => {
       e.preventDefault();
-      if (checked) return;
-      checked = true;
+      if (finished) return;
       if (typedRight(inp.value, c.en)) {
+        finished = true;
+        inp.classList.remove('bad');
         inp.classList.add('ok');
         say(c.en);
-        setTimeout(() => done(false), 700);
+        setTimeout(() => done(missed), 700);
       } else {
+        missed = true;
         inp.classList.add('bad');
-        ex.querySelector('#btns').innerHTML = '';
-        ex.querySelector('#res').innerHTML = `<p class="answer">Правильно: <b>${esc(c.en)}</b> ${sayBtn(c.en)}</p><div id="nxp"></div>`;
-        nextButton(ex.querySelector('#nxp'), () => done(true));
+        inp.focus();
       }
     };
   }),
