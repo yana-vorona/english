@@ -14,7 +14,8 @@ const DAY = 86400000;
 const BOSS_DECK = 'фразовые глаголы';
 const BOSS_GOAL = 50;
 const WORDS_PER_MIN = 8;      // повторение: ~1 мин на 8 слов
-const DAILY_CAP = 80;         // ~10 минут повторения в день
+// Порция в день — по реальному темпу: сколько слов в среднем повторяла в дни занятий за 2 недели.
+const CAP_DEFAULT = 15, CAP_MIN = 10, CAP_MAX = 60;
 
 const startOfDay = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
 const weekStart = t => { const d = new Date(startOfDay(t)); const wd = (d.getDay() + 6) % 7; return d.getTime() - wd * DAY; };
@@ -62,20 +63,23 @@ export async function computeStats() {
     bossPct = bc.length ? Math.round(bc.reduce((a, c) => a + Math.min(c.box || 0, S.LEARNED_BOX) / S.LEARNED_BOX, 0) / bc.length * 100) : 0;
   }
 
-  // План повторения на 7 дней: что пора + что подойдёт, не больше ~10 минут в день.
+  // План повторения на 7 дней: что пора + что подойдёт, не больше твоей обычной порции в день.
   const today = startOfDay(now);
+  const recent = events.filter(e => e.type === 'review' && e.at >= today - 14 * DAY);
+  const revDays = new Set(recent.map(e => dayKey(startOfDay(e.at)))).size;
+  const dailyCap = revDays ? Math.max(CAP_MIN, Math.min(CAP_MAX, Math.round(recent.length / revDays))) : CAP_DEFAULT;
   const plan = [];
   let carry = cards.filter(c => c.box >= 1 && c.box < S.LEARNED_BOX && c.due && c.due < today + DAY).length;
   for (let i = 0; i < 7; i++) {
     const from = today + i * DAY;
     if (i > 0) carry += cards.filter(c => c.box >= 1 && c.box < S.LEARNED_BOX && c.due >= from && c.due < from + DAY).length;
-    const take = Math.min(carry, DAILY_CAP);
+    const take = Math.min(carry, dailyCap);
     carry -= take;
     plan.push({ day: from, words: take, minutes: Math.ceil(take / WORDS_PER_MIN) });
   }
   const todayDone = active.has(dayKey(today));
   const hwStreak = await lessonStreak();
-  return { week: Math.round(week), prev: Math.round(prev), streak, freezeLeft, todayDone, boss: !!boss, bossPct, plan, hwStreak };
+  return { week: Math.round(week), prev: Math.round(prev), streak, freezeLeft, todayDone, boss: !!boss, bossPct, plan, hwStreak, dailyCap };
 }
 
 export function statsBanner(s) {
@@ -112,7 +116,7 @@ export async function statsView() {
       <div class="plan">${s.plan.map((p, i) => `
         <div class="plan-row${i === 0 ? ' today' : ''}"><span>${i === 0 ? 'Сегодня' : esc(wd(p.day))}</span>
         <span>${p.words ? `🔁 ${p.words} · ~${p.minutes} мин` : '—'}</span></div>`).join('')}</div>
-      <p class="muted">Не больше ~10 минут в день: если накопилось много, раскладываю на несколько дней.</p>
+      <p class="muted">Не больше ${s.dailyCap} ${plural(s.dailyCap, 'слова', 'слов', 'слов')} в день — столько, сколько ты обычно успеваешь. Накопилось больше — раскладываю на несколько дней.</p>
     </section>`;
   bindLessons($app, statsView);
 }
