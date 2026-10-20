@@ -365,6 +365,9 @@ body.wide #app { max-width: none; margin-right: 16px; }
 @media (min-width: 1001px) {
   #stickers { left: 0; top: 0; bottom: calc(80px + env(safe-area-inset-bottom)); width: 240px; padding: 14px 8px; overflow: auto; background: transparent; }
   .hubbar { left: 240px; }
+  /* свёрнут щелчком по «📌 Фиксить» — остаётся только заголовок */
+  #stickers.shut { bottom: auto; overflow: visible; }
+  #stickers.shut textarea, #stickers.shut .fixrow, #stickers.shut #fxstk { display: none; }
   #app { margin-left: max(256px, calc(50% - 320px)); }
 }
 .hubbar #status { color: var(--muted); }

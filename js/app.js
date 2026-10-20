@@ -643,7 +643,14 @@ startUpdates();
 
 // 📌 Стикер «Фиксить» (как в штабе): пишешь или говоришь → «Отправить» → отдельный Claude на ПК.
 const fixn = document.getElementById('fixn'), fixst = document.getElementById('fixnst');
-document.querySelector('.fixhead').onclick = () => document.getElementById('stickers').classList.toggle('open');
+// на телефоне щелчок разворачивает стикер, на ПК — сворачивает (и запоминает)
+const stk = document.getElementById('stickers'), wideScr = matchMedia('(min-width: 1001px)');
+try { stk.classList.toggle('shut', localStorage.getItem('fixShut') === '1'); } catch {}
+document.querySelector('.fixhead').onclick = () => {
+  if (!wideScr.matches) { stk.classList.toggle('open'); return; }
+  const shut = stk.classList.toggle('shut');
+  try { localStorage.setItem('fixShut', shut ? '1' : '0'); } catch {}
+};
 document.getElementById('fixnsend').onclick = async () => {
   const text = fixn.value.trim();
   if (!text) { fixn.focus(); return; }
