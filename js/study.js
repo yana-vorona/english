@@ -323,23 +323,28 @@ export async function reviewView(scope, n) {
         return;
       }
       area.innerHTML = `<div class="opts">${opts.map(o => `<button class="opt">${esc(o)}</button>`).join('')}</div>`;
+      // Ошибка: правильный не подсвечиваем — тыкаешь дальше, пока не найдёшь; засчитывается первый ответ.
+      let missed = false;
       area.querySelectorAll('.opt').forEach(b => b.onclick = async () => {
-        if (answered) return;
-        answered = true;
+        if (b.disabled) return;
         const right = b.textContent === c.ru;
-        area.querySelectorAll('.opt').forEach(x => { if (x.textContent === c.ru) x.classList.add('ok'); });
-        if (!item.retry) {
-          // слово, которому ещё рано повторяться (микс), коробку не меняет, но баллы за занятие идут
-          if (isDue(c)) await S.answerReview(c.id, right); else await S.logEvent('review', c.id, right);
-          if (right) ok++; else { bad++; wrong.push(c); }
+        if (!answered) {
+          answered = true;
+          if (!item.retry) {
+            // слово, которому ещё рано повторяться (микс), коробку не меняет, но баллы за занятие идут
+            if (isDue(c)) await S.answerReview(c.id, right); else await S.logEvent('review', c.id, right);
+            if (right) ok++; else { bad++; wrong.push(c); }
+          }
+          if (!right) { missed = true; queue.push({ c, retry: true }); }
         }
-        if (right) { setTimeout(nextCard, 600); return; }
-        b.classList.add('bad');
-        queue.push({ c, retry: true });
-        nextButton(ex.querySelector('#after'), nextCard);
+        if (!right) { b.classList.add('bad'); b.disabled = true; return; }
+        area.querySelectorAll('.opt').forEach(x => { x.disabled = true; });
+        b.classList.add('ok');
+        setTimeout(nextCard, missed ? 900 : 600);
       });
     };
     render();
+    say(c.en);
   };
 
   const finish = async () => {
