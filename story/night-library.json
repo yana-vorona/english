@@ -3,21 +3,70 @@
   "chapters": [
     { "title": "The Letter",
       "text": "Mira is twenty-four. She works in a small coffee shop in Edinburgh. One rainy evening a black cat brings her a letter. The letter says: \"Come to the Night Library. Tonight. Midnight. Tell no one.\" There is no name, only a drawing of a key.\nMira laughs. Libraries don't open at night. But at 11:50 she is standing in front of an old door on a narrow street. The door was not there yesterday. She is sure of it.\nThe cat sits next to her and looks at her like an old teacher. \"Okay,\" she says. \"One look. Then I go home.\"\nShe knocks. The door opens by itself.",
-      "words": { "rainy": "дождливый", "narrow": "узкий", "sure": "уверена", "knocks": "стучит", "by itself": "сама по себе" } },
+      "words": { "rainy": "дождливый", "narrow": "узкий", "sure": "уверена", "knocks": "стучит", "by itself": "сама по себе" },
+      "tr": [
+        ["Мире двадцать четыре года.", "Она работает в маленькой кофейне в Эдинбурге.", "Однажды дождливым вечером чёрный кот приносит ей письмо.", "В письме сказано: «Приходи в Ночную библиотеку. Сегодня. В полночь. Никому не говори».", "Имени нет, только рисунок ключа."],
+        ["Мира смеётся.", "Библиотеки не работают по ночам.", "Но в 23:50 она стоит перед старой дверью на узкой улочке.", "Вчера этой двери здесь не было.", "Она в этом уверена."],
+        ["Кот сидит рядом и смотрит на неё, как старый учитель.", "«Ладно», — говорит она.", "«Одним глазком. И сразу домой»."],
+        ["Она стучит.", "Дверь открывается сама."]
+      ] },
     { "title": "Books That Whisper",
       "text": "Inside, it is warm and quiet. Thousands of books stand on tall shelves. Some of them are whispering.\nA tall man in a grey coat walks to her. He has very tidy hair and a very untidy smile. \"You're late,\" he says.\n\"It's midnight exactly,\" Mira answers.\n\"Exactly is late here.\"\nHis name is Mr Fenwick. He is the librarian. \"Somebody has stolen a book from us,\" he says. \"Not an ordinary book. A book that remembers everything people forget. And you, Mira, are going to find it.\"\n\"Why me?\"\nMr Fenwick smiles. \"Because the cat chose you. And the cat is never wrong.\"",
-      "words": { "shelves": "полки", "whispering": "шепчут", "tidy": "аккуратный", "untidy": "неаккуратный, растрёпанный", "stolen": "украл (has stolen)", "ordinary": "обычный", "chose": "выбрал" } },
+      "words": { "shelves": "полки", "whispering": "шепчут", "tidy": "аккуратный", "untidy": "неаккуратный, растрёпанный", "stolen": "украл (has stolen)", "ordinary": "обычный", "chose": "выбрал" },
+      "tr": [
+        ["Внутри тепло и тихо.", "Тысячи книг стоят на высоких полках.", "Некоторые из них шепчутся."],
+        ["К ней подходит высокий мужчина в сером пальто.", "У него очень аккуратная причёска и очень растрёпанная улыбка.", "«Вы опоздали», — говорит он."],
+        ["«Ровно полночь», — отвечает Мира."],
+        ["«Ровно — здесь значит поздно»."],
+        ["Его зовут мистер Фенвик.", "Он библиотекарь.", "«У нас украли книгу», — говорит он.", "«Не обычную книгу. Книгу, которая помнит всё, что забывают люди. И вы, Мира, её найдёте»."],
+        ["«Почему я?»"],
+        ["Мистер Фенвик улыбается.", "«Потому что вас выбрал кот. А кот никогда не ошибается»."]
+      ] },
     { "title": "The Empty Shelf",
       "text": "Mr Fenwick shows her the empty place on the shelf. There is dust everywhere, but not here.\n\"So the thief was here recently,\" Mira says.\n\"Very good,\" says Fenwick. \"What else?\"\nMira looks closely. On the floor there is a small blue feather and a train ticket. The ticket is from yesterday: Edinburgh – York, 9:15.\n\"People don't usually lose train tickets in magic libraries,\" she says.\n\"People don't usually find them,\" Fenwick answers.\nThe cat jumps on the shelf and sneezes. The feather flies up and starts to glow. Somewhere in the library, a book begins to sing.",
-      "words": { "dust": "пыль", "thief": "вор", "recently": "недавно", "closely": "внимательно", "feather": "перо", "sneezes": "чихает", "glow": "светиться" } },
+      "words": { "dust": "пыль", "thief": "вор", "recently": "недавно", "closely": "внимательно", "feather": "перо", "sneezes": "чихает", "glow": "светиться" },
+      "tr": [
+        ["Мистер Фенвик показывает ей пустое место на полке.", "Везде пыль, а здесь нет."],
+        ["«Значит, вор был здесь недавно», — говорит Мира."],
+        ["«Очень хорошо», — говорит Фенвик.", "«Что ещё?»"],
+        ["Мира присматривается.", "На полу лежат маленькое синее перо и билет на поезд.", "Билет вчерашний: Эдинбург – Йорк, 9:15."],
+        ["«Обычно люди не теряют билеты на поезд в волшебных библиотеках», — говорит она."],
+        ["«Обычно люди их и не находят», — отвечает Фенвик."],
+        ["Кот запрыгивает на полку и чихает.", "Перо взлетает и начинает светиться.", "Где-то в библиотеке начинает петь книга."]
+      ] },
     { "title": "The Singing Book",
       "text": "They follow the song through dark corridors. The singing book is small and red, and it is very proud of its voice.\n\"I saw the thief!\" it says. \"But I won't tell you for free.\"\n\"What do you want?\" asks Mira.\n\"A compliment. A real one.\"\nMira thinks. \"You have the best voice in the whole library.\"\nThe book blushes — it becomes even redder. \"The thief had cold hands and smelled of the sea. And she was crying.\"\n\"She?\"\n\"She,\" says the book, and starts singing again, very loudly, so they can't ask anything else.",
-      "words": { "follow": "идти за", "proud": "гордая", "for free": "бесплатно", "whole": "весь, целый", "blushes": "краснеет", "smelled of": "пахла" } },
+      "words": { "follow": "идти за", "proud": "гордая", "for free": "бесплатно", "whole": "весь, целый", "blushes": "краснеет", "smelled of": "пахла" },
+      "tr": [
+        ["Они идут на звук песни по тёмным коридорам.", "Поющая книга маленькая и красная, и она очень гордится своим голосом."],
+        ["«Я видела вора!» — говорит она.", "«Но бесплатно не скажу»."],
+        ["«Чего ты хочешь?» — спрашивает Мира."],
+        ["«Комплимент. Настоящий»."],
+        ["Мира думает.", "«У тебя лучший голос во всей библиотеке»."],
+        ["Книга краснеет — становится ещё краснее.", "«У вора были холодные руки, и от неё пахло морем. И она плакала»."],
+        ["«Она?»"],
+        ["«Она», — говорит книга и снова начинает петь, очень громко, чтобы больше ни о чём не спрашивали."]
+      ] },
     { "title": "York, 9:15",
       "text": "In the morning Mira is on the train to York. She hasn't slept, but she has never felt more awake. The cat is in her bag. It wasn't her idea.\nIn York there is no sea. \"Cold hands, the sea, crying,\" she repeats. \"Who cries about the sea in a city with no sea?\"\nAt the station she sees a poster: \"The Sea Museum. New exhibition: Things the Ocean Forgot.\"\nNext to the poster stands a woman in a blue coat. Her eyes are red. She is holding a book close to her chest — like a child.\nThe cat makes a quiet, angry sound.",
-      "words": { "awake": "бодрая, не сонная", "repeats": "повторяет", "exhibition": "выставка", "chest": "грудь", "angry": "сердитый" } },
+      "words": { "awake": "бодрая, не сонная", "repeats": "повторяет", "exhibition": "выставка", "chest": "грудь", "angry": "сердитый" },
+      "tr": [
+        ["Утром Мира едет на поезде в Йорк.", "Она не спала, но никогда ещё не чувствовала себя такой бодрой.", "Кот у неё в сумке.", "Это была не её идея."],
+        ["В Йорке нет моря.", "«Холодные руки, море, слёзы», — повторяет она.", "«Кто плачет о море в городе, где нет моря?»"],
+        ["На вокзале она видит афишу: «Музей моря. Новая выставка: Вещи, которые забыл океан»."],
+        ["Рядом с афишей стоит женщина в синем пальто.", "Глаза у неё красные.", "Она прижимает к груди книгу — как ребёнка."],
+        ["Кот издаёт тихий сердитый звук."]
+      ] },
     { "title": "The Woman in Blue",
       "text": "\"Excuse me,\" says Mira. \"I think that book isn't yours.\"\nThe woman doesn't run. She looks very tired. \"I know,\" she says. \"But it has my mother's memories. She is forgetting everything. Her name, my name, the sea where she grew up. The book remembers. I only wanted to read it to her. Once.\"\nMira doesn't know what to say. A thief is easy to catch. A daughter is not.\nThe cat climbs out of the bag and sits between them. Then, for the first time, it speaks.\n\"There is a third way,\" says the cat.\nTo be continued…",
-      "words": { "memories": "воспоминания", "grew up": "выросла", "once": "один раз", "catch": "поймать", "climbs out": "вылезает", "between": "между" } }
+      "words": { "memories": "воспоминания", "grew up": "выросла", "once": "один раз", "catch": "поймать", "climbs out": "вылезает", "between": "между" },
+      "tr": [
+        ["«Простите», — говорит Мира.", "«Кажется, эта книга не ваша»."],
+        ["Женщина не убегает.", "Она выглядит очень усталой.", "«Знаю», — говорит она.", "«Но в ней воспоминания моей мамы. Она всё забывает. Своё имя, моё имя, море, у которого выросла. А книга помнит. Я только хотела прочитать её маме. Один раз»."],
+        ["Мира не знает, что сказать.", "Вора поймать легко.", "А дочь — нет."],
+        ["Кот вылезает из сумки и садится между ними.", "И тут он впервые заговаривает."],
+        ["«Есть третий путь», — говорит кот."],
+        ["Продолжение следует…"]
+      ] }
   ]
 }
