@@ -509,7 +509,7 @@ async function fixView() {
         ${f.answer ? `<div class="fxans"><span class="by">Claude · ${when(f.doneAt)}</span><div class="pre">${esc(f.answer)}</div></div>` : ''}
         ${f.status === 'done' && !f.seen ? `<div class="fxrow"><input data-fxre="${esc(f.id)}" placeholder="Дописать Claude по этой задаче…"><button class="talkBtn" data-fxsend="${esc(f.id)}">Отправить</button></div>` : ''}
       </div>
-      ${f.status === 'done' && !f.seen ? `<div class="fxrow"><button class="talkBtn fxok" data-fxok="${esc(f.id)}">✓ Отработано</button></div>` : ''}
+      ${f.seen ? '' : `<div class="fxrow"><button class="talkBtn fxok" data-fxok="${esc(f.id)}">${f.status === 'done' ? '✓ Отработано' : '✕ Убрать'}</button></div>`}
       ${f.seen ? `<div class="fxrow"><button class="talkBtn" data-fxback="${esc(f.id)}">↩ вернуть</button></div>` : ''}
     </div>`;
   };
@@ -555,8 +555,17 @@ async function fixView() {
     for (const f of toClose) await save(f, { seen: Date.now() });
     fixView(); fixStickers();
   });
-  $app.querySelectorAll('[data-fxok]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxok), { seen: Date.now() }); fixView(); fixStickers(); });
-  $app.querySelectorAll('[data-fxback]').forEach(b => b.onclick = async () => { await save(byId(b.dataset.fxback), { seen: 0 }); fixView(); fixStickers(); });
+  // убрала задачу, которую Claude ещё не взял, - она отменяется (status 'cancel'), «↩ вернуть» отдаёт её Claude снова
+  $app.querySelectorAll('[data-fxok]').forEach(b => b.onclick = async () => {
+    const f = byId(b.dataset.fxok);
+    await save(f, { seen: Date.now(), ...(f.status === 'new' ? { status: 'cancel' } : {}) });
+    fixView(); fixStickers();
+  });
+  $app.querySelectorAll('[data-fxback]').forEach(b => b.onclick = async () => {
+    const f = byId(b.dataset.fxback);
+    await save(f, { seen: 0, ...(f.status === 'cancel' ? { status: 'new' } : {}) });
+    fixView(); fixStickers();
+  });
   // ответ по задаче уходит новой задачей со ссылкой на старую - Claude видит прошлые задачи и поймёт, к чему это
   $app.querySelectorAll('[data-fxsend]').forEach(b => b.onclick = async () => {
     const f = byId(b.dataset.fxsend), inp = $app.querySelector(`[data-fxre="${CSS.escape(f.id)}"]`), tx = inp.value.trim();

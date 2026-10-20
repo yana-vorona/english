@@ -338,7 +338,7 @@ body.wide #app { max-width: none; margin-right: 16px; }
 .fxmore { display: none; }
 .fxcard.open .fxtext { display: block; -webkit-line-clamp: unset; }
 .fxcard.open .fxmore { display: block; }
-.fxcard > .fxrow:last-child { margin-top: auto; padding-top: 8px; }
+.fxcard > .fxrow:last-child { margin-top: auto; padding-top: 8px; justify-content: flex-end; }
 @media (max-width: 1000px) { .fxcols { grid-template-columns: 1fr; } .fxseg { margin-left: 0; } }
 /* на узком экране стикер свёрнут в «📌 Фиксить», щелчок — развернуть */
 @media (max-width: 1000px) {
