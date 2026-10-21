@@ -99,7 +99,7 @@ export async function storyView(n) {
     await S.logEvent('read', id, true);
     b.classList.remove('primary');
     b.textContent = '✓ Сегодня прочитано — питомец сыт 🐾';
-    toast('Глава засчитана 🐾 Питомец доволен!');
+    toast('Сегодняшний день засчитан 🐾 Для питомца важны дни, а не число глав: 3 дня за неделю — новый облик');
   };
   $app.querySelectorAll('.w').forEach(b => b.onclick = () => toast(`${keys[+b.dataset.i]} — ${ch.words[keys[+b.dataset.i]]}`));
   $app.querySelectorAll('.tr').forEach(b => b.onclick = () => {

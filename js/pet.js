@@ -50,15 +50,18 @@ export async function petCard() {
   const mood = p.sad ? 'Грустит: к прошлому уроку ДЗ не сделано 🥺 Сделаешь — повеселеет.'
     : p.wordsToday ? 'Сегодня покормлен словами или чтением — доволен 💛'
     : p.streak ? 'Доволен и сыт 💛' : 'Ждёт первую домашку, слова или главу 🙂';
-  const hwNext = w.total ? (left ? `ДЗ: ещё к ${left} ${left === 1 ? 'уроку' : 'урокам'} на этой неделе (${w.done} из ${w.total}).` : 'ДЗ на этой неделе все сделаны ✨')
-    : 'На этой неделе уроков нет.';
+  // Понятно по шагам: за неделю можно получить 2 новых облика — за ДЗ и за 3 дня занятий.
+  const hwLine = !w.total ? '📚 Домашки: на этой неделе уроков нет.'
+    : left ? `📚 Домашки ко всем урокам недели: сделано ${w.done} из ${w.total}.` : '📚 Домашки на этой неделе все сделаны — облик получен ✨';
   const wl = Math.max(0, WORD_DAYS - p.wordDays);
-  const wordNext = wl ? `Слова или чтение: ещё ${wl} ${wl === 1 ? 'день' : 'дня'} на этой неделе (${p.wordDays} из ${WORD_DAYS}).` : 'Слова и чтение на этой неделе — есть ✨';
-  const next = p.maxed ? 'Это самый последний облик — ты дошла до конца 🏆'
-    : `Новый облик дают и ДЗ, и слова с чтением. ${hwNext} ${wordNext}`;
+  const dayLine = wl ? `📖 3 разных дня со словами или главой: есть ${p.wordDays} из ${WORD_DAYS}.` : '📖 3 дня занятий на этой неделе есть — облик получен ✨';
+  const todayLine = p.wordsToday ? 'Сегодня уже засчитан 👍 Можно читать и учить дальше, но в зачёт идёт день, а не количество глав — приходи завтра.' : '';
+  const how = p.maxed ? '<p class="muted">Это самый последний облик — ты дошла до конца 🏆</p>'
+    : `<p class="muted"><b>Как растёт:</b> каждую неделю можно получить до 2 новых обликов.</p>
+      <p class="muted">${hwLine}<br>${dayLine}</p>${todayLine ? `<p class="muted">${todayLine}</p>` : ''}`;
   return `<section class="card pet">
     <img class="petimg${p.sad ? ' sad' : ''}" src="icons/pet/${p.level}.png" alt="">
     <div><h2>🐾 Питомец · облик ${p.level + 1} из ${FORMS}</h2>
-      <p class="muted">${mood}</p><p class="muted">${next}</p></div>
+      <p class="muted">${mood}</p>${how}</div>
   </section>`;
 }
