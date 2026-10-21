@@ -1,6 +1,7 @@
 // История-сериал: первая глава открыта сразу, каждая сделанная домашка открывает следующую.
 // Главы — app/story/night-library.json; незнакомые слова нажимаются и показывают перевод.
 import * as S from './store.js';
+import * as db from './db.js';
 import { esc, toast } from './ui.js';
 
 const $app = document.getElementById('app');
@@ -78,15 +79,28 @@ export async function storyView(n) {
     return;
   }
   const { html, keys } = withWords(ch.text, ch.words, ch.tr);
+  // «Прочитала» — событие 'read' в журнал: кормит питомца (день занятий) и идёт в статистику. Раз в день на главу.
+  const id = 'ch' + n, today = new Date().setHours(0, 0, 0, 0);
+  const reads = (await db.getAll('events')).filter(e => e.type === 'read' && e.cardId === id);
+  const readToday = reads.some(e => e.at >= today);
   $app.innerHTML = `
     <header class="top"><a class="back" href="#/stats">‹</a><h1 class="grow">📖 ${n}. ${esc(ch.title)}</h1></header>
     <article class="flash story">${html}</article>
     <p class="muted center">Подчёркнутое слово — перевод слова. «ru» в конце — перевод всего предложения.</p>
+    <button class="btn wide${readToday ? '' : ' primary'}" id="readDone"${readToday ? ' disabled' : ''}>${readToday ? '✓ Сегодня прочитано — питомец сыт 🐾' : '✓ Прочитала главу'}</button>
     <div class="row">
       ${n > 1 ? `<a class="btn" href="#/story/${n - 1}">‹ Глава ${n - 1}</a>` : ''}
       ${n < s.chapters.length ? (n < p.open ? `<a class="btn primary grow" href="#/story/${n + 1}">Глава ${n + 1} ›</a>`
         : `<a class="btn grow" href="#/hw">🔒 Глава ${n + 1} — после следующей домашки</a>`) : '<p class="muted">Новые главы скоро будут ✍️</p>'}
     </div>`;
+  $app.querySelector('#readDone').onclick = async e => {
+    const b = e.currentTarget;
+    b.disabled = true;
+    await S.logEvent('read', id, true);
+    b.classList.remove('primary');
+    b.textContent = '✓ Сегодня прочитано — питомец сыт 🐾';
+    toast('Глава засчитана 🐾 Питомец доволен!');
+  };
   $app.querySelectorAll('.w').forEach(b => b.onclick = () => toast(`${keys[+b.dataset.i]} — ${ch.words[keys[+b.dataset.i]]}`));
   $app.querySelectorAll('.tr').forEach(b => b.onclick = () => {
     const r = b.nextElementSibling;

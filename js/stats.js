@@ -26,6 +26,7 @@ function eventPoints(e) {
   if (e.type === 'review') return 1 / WORDS_PER_MIN;
   if (e.type === 'learn') return 3 / 5;        // новые слова: ~3 мин на 5 слов
   if (e.type === 'trainer') return 0.25;       // ~15 секунд на вопрос
+  if (e.type === 'read') return 5;             // глава истории: ~5 минут
   return 0;
 }
 
