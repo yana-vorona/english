@@ -437,8 +437,10 @@ function freeRun(h) {
     <div class="chatin">
       <textarea id="msg" rows="3" placeholder="${h.chat.length ? 'Ответить Claude…' : 'Например: посмотрела видео про Past perfect. Поняла, что…'}">${esc(h.draft || '')}</textarea>
       <button class="btn primary" id="send"${waiting ? ' disabled title="Подожди ответ Claude"' : ''}>Отправить</button>
-    </div>`;
+    </div>
+    ${h.status === 'done' ? '' : '<button class="btn ghost wide" id="manual">✓ Сделала (без разбора с Claude)</button>'}`;
   bindDelete(h);
+  bindManual(h);
   const box = $app.querySelector('#msg');
   box.oninput = () => { h.draft = box.value; S.saveHw(h); };
   $app.querySelector('#send').onclick = async () => {
@@ -470,7 +472,7 @@ function bindManual(h) {
   if (!b) return;
   b.onclick = async () => {
     Object.assign(h, { status: 'done', doneAt: Date.now(), manual: true, result: h.result || null,
-      minutes: h.minutes || (h.content ? estimate(h.content) : 5) });
+      minutes: h.minutes || (h.content ? estimate(h.content) : h.book === 'free' ? 15 : 5) });
     await S.saveHw(h);
     toast('Засчитано ✅ Открылась новая глава 📖');
     location.hash = '#/hw';
