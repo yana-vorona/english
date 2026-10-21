@@ -1,8 +1,9 @@
 // «Лисья дуэль» с Енотом Бруно. Каждый урок недели, к которому сделаны все ДЗ, = набор из 3 карт (слова, которые Яна уже учила).
 // У Бруно — наборы за все уроки недели (дни из настроек, отменённые не в счёт). 5 раундов: выбираешь карту, отвечаешь перевод —
-// верно: сила ×2, неверно: карта сгорает. Бруно играет свою карту. Настоящая дуэль — в воскресенье, с недели 19.10.
+// Бруно ходит первым (карта открыта), отвечаешь перевод за 7 секунд — верно: сила ×2 (+3 за скорость, + серия), неверно/не успела:
+// карта сгорает. Особые карты 🔄/🛡 — см. KINDS. Настоящая дуэль — в воскресенье, с недели 19.10.
 import * as S from './store.js';
-import { esc, toast } from './ui.js';
+import { esc, toast, load, save } from './ui.js';
 import { weekLessons } from './lessons.js';
 
 const $app = document.getElementById('app');
@@ -62,6 +63,21 @@ export async function duelCard() {
   </section>`;
 }
 
+// Озвучка слова (тот же выключатель 🔇, что в занятиях).
+const muted = () => load('mute', false);
+function speak(text) {
+  if (muted() || !('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-GB';
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+// Особые карты: 🔄 — наоборот (видишь русское, ищешь английское), сила ×3; 🛡 — щит: верно — карта Бруно сгорает.
+const KINDS = { flip: { icon: '🔄', hint: 'Наоборот: найди английское слово. Верно — сила ×3!' },
+  shield: { icon: '🛡', hint: 'Щит: верно — карта Бруно сгорает!' } };
+const TIME = 7000, FAST = 3500;
+
 export async function duelView(mode) {
   const real = mode === 'real';
   const d = await duelState();
@@ -72,48 +88,84 @@ export async function duelView(mode) {
   }
   const r = real ? rng(d.ws / DAY) : Math.random;
   const mySets = real ? d.sets : 2;
-  const deck = pick(all, mySets * 3 + (real ? d.rival : LESSONS_PER_WEEK) * 3, r);
+  const deck = pick(all, mySets * 3 + (real ? d.rival : LESSONS_PER_WEEK) * 3, r)
+    .map(c => { const x = r(); return { ...c, kind: x < .2 ? 'flip' : x < .35 ? 'shield' : '' }; });
   let hand = deck.slice(0, mySets * 3);
   let bruno = deck.slice(mySets * 3);
-  let me = 0, him = 0, round = 1, line = say('start');
+  let me = 0, him = 0, round = 1, streak = 0, line = say('start'), bc = null, timer = 0;
+
+  const cardHtml = (c, i) => `<button class="pcard${c.kind ? ' ' + c.kind : ''}" data-i="${i}">
+    ${c.kind ? `<i class="kind">${KINDS[c.kind].icon}</i>` : ''}<b>${esc(c.en)}</b><span>⚡${c.power}</span></button>`;
 
   const render = () => {
+    bc = bruno.splice(Math.floor(Math.random() * bruno.length), 1)[0] || null;   // Бруно ходит первым, карта открыта
     $app.innerHTML = `
       <header class="top study-top"><a class="back close" href="#/stats">✕</a>
-        <h2 class="grow">🃏 ${real ? 'Дуэль' : 'Пробная дуэль'}</h2><span class="counters">Ты ${me} : ${him} 🦝</span></header>
-      <p class="muted center">Раунд ${round} из ${ROUNDS}</p>
+        <h2 class="grow">🃏 ${real ? 'Дуэль' : 'Пробная дуэль'}</h2><span class="counters">Ты ${me} : ${him} 🦝</span>
+        <button type="button" class="icon" id="mute" aria-label="Звук">${muted() ? '🔇' : '🔊'}</button></header>
+      <p class="muted center">Раунд ${round} из ${ROUNDS}${streak >= 2 ? ` · 🔥 серия ${streak}` : ''}</p>
       <div class="bubble">🦝 ${esc(line)}</div>
+      <div class="arena">
+        <div class="slot">${bc ? `<div class="pcard bruno flipin"><b>${esc(bc.en)}</b><span>⚡${bc.power}</span></div>` : '<div class="pcard empty">пусто</div>'}<small>Бруно</small></div>
+        <div class="vs">VS</div>
+        <div class="slot" id="mine"><div class="pcard empty">?</div><small>Ты</small></div>
+      </div>
+      <p class="muted center">${bc ? `Бей ⚡${bc.power}! Верный ответ — сила ×2, быстрый — ещё +3.` : 'У Бруно кончились карты — лёгкие очки!'}</p>
       <div id="table"></div>
       <h3>Твои карты</h3>
-      <div class="hand">${hand.length ? hand.map((c, i) => `<button class="pcard" data-i="${i}"><b>${esc(c.en)}</b><span>⚡${c.power}</span></button>`).join('')
-        : '<p class="muted">Карт нет 😅</p>'}</div>
+      <div class="hand">${hand.length ? hand.map(cardHtml).join('') : '<p class="muted">Карт нет 😅</p>'}</div>
       ${hand.length ? '' : '<button class="btn primary wide" id="pass">Пропустить раунд</button>'}`;
-    $app.querySelectorAll('.pcard').forEach(b => b.onclick = () => play(+b.dataset.i));
-    $app.querySelector('#pass')?.addEventListener('click', () => brunoMove(0));
+    $app.querySelector('#mute').onclick = e => {
+      save('mute', !muted());
+      if (muted()) speechSynthesis?.cancel();
+      e.currentTarget.textContent = muted() ? '🔇' : '🔊';
+    };
+    $app.querySelectorAll('.hand .pcard').forEach(b => b.onclick = () => play(+b.dataset.i));
+    $app.querySelector('#pass')?.addEventListener('click', () => resolve(0, false, null));
   };
 
   const play = i => {
     const c = hand[i];
-    const opts = pick([c.ru, ...pick(all.filter(x => x.ru !== c.ru), 3, Math.random).map(x => x.ru)], 4, Math.random);
+    const flip = c.kind === 'flip';
+    const q = flip ? c.ru : c.en, right = flip ? c.en : c.ru, field = flip ? 'en' : 'ru';
+    const opts = pick([right, ...pick(all.filter(x => x[field] !== right), 3, Math.random).map(x => x[field])], 4, Math.random);
+    $app.querySelector('#mine').innerHTML = `<div class="pcard flipin${c.kind ? ' ' + c.kind : ''}"><b>${esc(c.en)}</b><span>⚡${c.power}</span></div><small>Ты</small>`;
     $app.querySelector('#table').innerHTML = `
-      <div class="flash"><div class="ex-word">${esc(c.en)}</div><p class="muted">Что это значит? Верно — сила ×2!</p></div>
+      <div class="flash"><div class="ex-word">${esc(q)}</div><p class="muted">${c.kind ? KINDS[c.kind].hint : 'Что это значит?'}</p>
+        <div class="tbar"><i></i></div></div>
       <div class="opts">${opts.map(o => `<button class="opt">${esc(o)}</button>`).join('')}</div>`;
-    $app.querySelectorAll('.pcard').forEach(b => { b.disabled = true; });
-    $app.querySelectorAll('.opt').forEach(b => b.onclick = () => {
-      const ok = b.textContent === c.ru;
-      $app.querySelectorAll('.opt').forEach(x => { x.disabled = true; if (x.textContent === c.ru) x.classList.add('ok'); });
-      if (!ok) b.classList.add('bad');
+    $app.querySelectorAll('.hand .pcard').forEach(b => { b.disabled = true; });
+    if (!flip) speak(c.en);
+    const bar = $app.querySelector('.tbar i');
+    requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transition = `width ${TIME}ms linear`; bar.style.width = '0%'; }));
+    const t0 = Date.now();
+    let done = false;
+    const answer = b => {
+      if (done || !bar.isConnected) return;   // ушла с экрана — таймер молчит
+      done = true;
+      clearTimeout(timer);
+      const ok = !!b && b.textContent === right;
+      const fast = ok && Date.now() - t0 < FAST;
+      $app.querySelectorAll('.opt').forEach(x => { x.disabled = true; if (ok && x === b) x.classList.add('ok'); });
+      if (b && !ok) b.classList.add('bad');
+      if (flip && ok) speak(c.en);
+      bar.style.transition = 'none';
       hand.splice(i, 1);
-      setTimeout(() => brunoMove(ok ? c.power * 2 : 0), 900);
-    });
+      streak = ok ? streak + 1 : 0;
+      const pts = ok ? c.power * (flip ? 3 : 2) + (fast ? 3 : 0) + (streak >= 2 ? streak : 0) : 0;
+      if (ok) toast(`+${pts}${fast ? ' ⚡ молния!' : ''}${streak >= 2 ? ` 🔥 серия ×${streak}` : ''}`);
+      else toast(b ? 'Мимо — карта сгорела 🔥' : '⏰ Время вышло — карта сгорела');
+      setTimeout(() => bar.isConnected && resolve(pts, ok && c.kind === 'shield'), 1000);
+    };
+    $app.querySelectorAll('.opt').forEach(b => b.onclick = () => answer(b));
+    timer = setTimeout(() => answer(null), TIME);
   };
 
-  const brunoMove = mine => {
-    const bc = bruno.splice(Math.floor(Math.random() * bruno.length), 1)[0];
-    const his = bc ? bc.power : 0;
+  const resolve = (mine, shield) => {
+    const his = bc && !shield ? bc.power : 0;
     me += mine; him += his;
-    line = mine === 0 && !hand.length && mine === his ? say('empty') : mine > his ? say('herRound') : mine < his ? say('hisRound') : 'Поровну. Скучно.';
-    if (bc) toast(`Бруно сыграл «${bc.en}» ⚡${his}`);
+    line = shield && bc ? 'Эй! Это нечестно, щиты запрещены! 😤' :
+      mine === 0 && !hand.length && mine === his ? say('empty') : mine > his ? say('herRound') : mine < his ? say('hisRound') : 'Поровну. Скучно.';
     if (++round > ROUNDS) return finish();
     render();
   };

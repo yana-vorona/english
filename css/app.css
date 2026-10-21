@@ -289,6 +289,20 @@ select.slot.missing { border-color: var(--bad); }
   border: 2px solid #F28C28; border-radius: 12px; background: linear-gradient(160deg, #FFF4E6, #FFE0BF); color: #3B2A20; font: inherit; font-size: 15px; cursor: pointer; }
 .pcard span { font-weight: 800; color: #C9601B; }
 .pcard:disabled { opacity: .5; }
+.pcard { position: relative; }
+.pcard .kind { position: absolute; top: 4px; right: 6px; font-style: normal; font-size: 14px; }
+.pcard.flip { border-color: #8E5BD8; background: linear-gradient(160deg, #F4ECFF, #E2D2FB); }
+.pcard.shield { border-color: #3B8ED8; background: linear-gradient(160deg, #EAF4FF, #CFE5FB); }
+.pcard.bruno { border-color: #6B5A4E; background: linear-gradient(160deg, #EEE7E1, #D9CCC1); }
+.pcard.empty { border-style: dashed; background: none; color: var(--muted); justify-content: center; }
+.arena { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin: 6px 0; }
+.arena .slot { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.arena .slot .pcard { width: 100%; cursor: default; }
+.arena .vs { font-weight: 900; font-size: 20px; color: #C9601B; }
+.flipin { animation: flipin .45s ease-out; }
+@keyframes flipin { from { transform: rotateY(90deg) scale(.8); opacity: 0; } to { transform: none; opacity: 1; } }
+.tbar { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 8px; }
+.tbar i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #E5484D, #F28C28, #3BB273); }
 .fix-sticker { position: fixed; right: 14px; bottom: calc(92px + env(safe-area-inset-bottom)); z-index: 15;
   width: 48px; height: 48px; border: 0; border-radius: 12px 12px 12px 2px; background: #fff4a8; color: #3B2A20; font-size: 22px;
   box-shadow: 0 3px 10px rgba(0,0,0,.18); transform: rotate(-4deg); cursor: pointer; }
