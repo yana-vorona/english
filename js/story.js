@@ -79,7 +79,7 @@ export async function storyView(n) {
     return;
   }
   const { html, keys } = withWords(ch.text, ch.words, ch.tr);
-  // «Прочитала» — событие 'read' в журнал: кормит питомца (день занятий) и идёт в статистику. Раз в день на главу.
+  // «Прочитала» — событие 'read' в журнал: кормит питомца (2 новые главы — бонусы) и идёт в статистику. Раз в день на главу.
   const id = 'ch' + n, today = new Date().setHours(0, 0, 0, 0);
   const reads = (await db.getAll('events')).filter(e => e.type === 'read' && e.cardId === id);
   const readToday = reads.some(e => e.at >= today);
@@ -99,7 +99,7 @@ export async function storyView(n) {
     await S.logEvent('read', id, true);
     b.classList.remove('primary');
     b.textContent = '✓ Сегодня прочитано — питомец сыт 🐾';
-    toast('Сегодняшний день засчитан 🐾 Для питомца важны дни, а не число глав: 3 дня за неделю — новый облик');
+    toast('Глава засчитана 🐾 Каждые 2 прочитанные главы — 2 🍪 питомцу');
   };
   $app.querySelectorAll('.w').forEach(b => b.onclick = () => toast(`${keys[+b.dataset.i]} — ${ch.words[keys[+b.dataset.i]]}`));
   $app.querySelectorAll('.tr').forEach(b => b.onclick = () => {
