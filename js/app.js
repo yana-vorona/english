@@ -9,6 +9,7 @@ import { hwList, hwRun } from './hw.js';
 import { statsView, computeStats, statsBanner } from './stats.js';
 import { storyView } from './story.js';
 import { duelView } from './duel.js';
+import { gameView } from './game.js';
 import { startUpdates, refreshApp } from './update.js';
 
 const $app = document.getElementById('app');
@@ -625,6 +626,7 @@ const routes = [
   [/^#\/stats$/, statsView],
   [/^#\/story\/(\d+)$/, storyView],
   [/^#\/duel\/(\w+)$/, duelView],
+  [/^#\/game$/, gameView],
   [/^#\/hw\/([^/]+)$/, hwRun],
 ];
 
@@ -633,7 +635,7 @@ async function router() {
   for (const [re, fn] of routes) {
     const m = h.match(re);
     if (m) {
-      const section = h.startsWith('#/settings') ? '#/settings' : h.startsWith('#/trainer') ? '#/trainer' : h.startsWith('#/hw') ? '#/hw' : (h.startsWith('#/stats') || h.startsWith('#/story') || h.startsWith('#/duel')) ? '#/stats' : h === '#/fix' ? '#/fix' : '#/';
+      const section = h.startsWith('#/settings') ? '#/settings' : h.startsWith('#/trainer') ? '#/trainer' : h.startsWith('#/hw') ? '#/hw' : (h.startsWith('#/stats') || h.startsWith('#/story') || h.startsWith('#/duel') || h.startsWith('#/game')) ? '#/stats' : h === '#/fix' ? '#/fix' : '#/';
       document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === section));
       document.body.classList.toggle('wide', h === '#/fix');
       await fn(...m.slice(1));

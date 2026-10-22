@@ -6,6 +6,7 @@ import { esc, plural } from './ui.js';
 import * as db from './db.js';
 import { storyCard } from './story.js';
 import { duelCard } from './duel.js';
+import { gameCard } from './game.js';
 import { lessonStreak, lessonsCard, bindLessons } from './lessons.js';
 import { petCard } from './pet.js';
 
@@ -99,6 +100,7 @@ export async function statsView() {
     <header class="top"><h1 class="fh"><img src="icons/fox-progress.png" alt="">Прогресс</h1></header>
     ${await petCard()}
     ${await storyCard()}
+    ${await gameCard()}
     ${await duelCard()}
     <section class="card">
       <h2>⭐ Баллы за неделю</h2>
