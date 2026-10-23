@@ -71,9 +71,9 @@ function confirmBox(text, ok = 'Удалить') {
 }
 
 function boxBadge(c) {
-  if (c.box >= S.LEARNED_BOX) return '<span class="badge ok">✅</span>';
-  if (!c.box) return '<span class="badge">новое</span>';
-  return `<span class="badge box">📦${c.box}</span>`;
+  const b = c.box >= S.LEARNED_BOX ? '<span class="badge ok">✅</span>'
+    : !c.box ? '<span class="badge">новое</span>' : `<span class="badge box">📦${c.box}</span>`;
+  return c.hard ? `<span>⭐ ${b}</span>` : b;
 }
 
 // ---------- Экран «Мои слова» ----------
@@ -215,11 +215,13 @@ function editCard(c) {
       <label>English<input name="en" value="${esc(c.en)}" lang="en" autocapitalize="off"></label>
       <label>Перевод<input name="ru" value="${esc(c.ru)}" lang="ru"></label>
       <p class="muted">Коробка: ${c.box >= S.LEARNED_BOX ? 'выучено ✅' : c.box ? c.box : 'новое, ещё не изучали'}</p>
+      <label class="check"><input type="checkbox" name="hard" ${c.hard ? 'checked' : ''}> ⭐ Сложное слово — повторять чаще</label>
       <div class="row rev"><button value="ok" class="btn primary">Сохранить</button><button value="cancel" class="btn ghost">Отмена</button><button value="del" class="btn danger-ghost">🗑</button></div>`);
     d.addEventListener('close', () => {
       const en = d.querySelector('[name=en]').value.trim(), ru = d.querySelector('[name=ru]').value.trim();
+      const hard = d.querySelector('[name=hard]').checked;
       if (d.returnValue === 'del') resolve('del');
-      else if (d.returnValue === 'ok' && en && ru && (en !== c.en || ru !== c.ru)) resolve({ en, ru });
+      else if (d.returnValue === 'ok' && en && ru && (en !== c.en || ru !== c.ru || hard !== !!c.hard)) resolve({ en, ru, hard });
       else resolve(null);
     });
   });

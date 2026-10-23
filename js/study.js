@@ -286,10 +286,10 @@ export async function reviewView(scope, n) {
   const back = deckId ? '#/deck/' + deckId : '#/';
   const N = +n || PORTION_REVIEW;
   const isDue = c => c.box >= 1 && c.box < S.LEARNED_BOX && c.due && c.due <= Date.now();
-  // 🎲 микс: случайные слова из отмеченных тем — сначала пора повторить, потом начатые, новые, выученные
+  // 🎲 микс: случайные слова из отмеченных тем — сначала пора повторить, потом ⭐ сложные, начатые, новые, выученные
   const mixPool = async () => {
     const ids = load('mixDecks', null);
-    const rank = c => isDue(c) ? 0 : c.box >= 1 && c.box < S.LEARNED_BOX ? 1 : !c.box ? 2 : 3;
+    const rank = c => isDue(c) ? 0 : c.hard ? 1 : c.box >= 1 && c.box < S.LEARNED_BOX ? 2 : !c.box ? 3 : 4;
     return shuffle((await S.allCards()).filter(c => !ids || ids.includes(c.deckId))).sort((a, b) => rank(a) - rank(b));
   };
   const due = mix ? await mixPool() : await S.dueCards(deckId);
@@ -333,6 +333,7 @@ export async function reviewView(scope, n) {
         </div>
         <div class="flash">${item.retry ? '<span class="badge box">🔁 ещё раз</span>' : ''}
           <div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div></div>
+        <label class="check center"><input type="checkbox" id="hard" ${c.hard ? 'checked' : ''}> ⭐ Сложное слово — повторять чаще</label>
         <div id="area"></div><div id="after"></div>
         <p class="muted center">Осталось: ${queue.length + 1}</p>`;
       ex.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
@@ -340,6 +341,12 @@ export async function reviewView(scope, n) {
         save('reviewMode', b.dataset.m);
         render();
       });
+      // галку можно поставить и после ответа — она сразу запоминается у слова
+      ex.querySelector('#hard').onchange = async e => {
+        c.hard = e.target.checked;
+        const saved = await S.updateCard(c.id, { hard: c.hard });
+        if (answered && saved.box >= 1 && saved.box < S.LEARNED_BOX) await S.updateCard(c.id, { due: c.hard ? Math.min(saved.due, S.nextDue(Math.max(1, saved.box - 1))) : saved.due });
+      };
       const area = ex.querySelector('#area');
       if (!lazy && !revealed) {
         area.innerHTML = `<p class="muted center">Вспомни перевод сама, потом проверь 🙂</p>

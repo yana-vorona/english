@@ -89,6 +89,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .field select, .field input { margin-top: 4px; color: var(--text); }
 label.check { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
 label.check input { width: 22px; min-height: 22px; }
+label.check.center { justify-content: center; color: var(--muted); font-size: 15px; }
 #newName { margin-top: 0; }
 
 /* Темы */

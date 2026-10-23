@@ -149,12 +149,13 @@ export async function markLearned(ids) {
 }
 
 // Ответ при повторении. Верно → следующая коробка, ошибка → коробка 1. Раньше срока слово не двигаем.
+// ⭐ Сложное слово возвращается чаще: срок — как у коробки на ступень ниже (но не меньше дня).
 export async function answerReview(id, ok) {
   const t = now();
   const c = await db.get('cards', id);
   if (!c || !c.due || c.due > t || c.box < 1 || c.box >= LEARNED_BOX) return c;
   c.box = ok ? c.box + 1 : 1;
-  c.due = nextDue(c.box, t);
+  c.due = c.hard && c.box < LEARNED_BOX ? startOfDay(t) + Math.max(1, INTERVALS[c.box - 1]) * DAY : nextDue(c.box, t);
   c.updatedAt = t;
   await db.put('cards', c);
   await log('review', id, ok);
