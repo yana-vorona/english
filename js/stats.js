@@ -7,6 +7,7 @@ import * as db from './db.js';
 import { storyCard } from './story.js';
 import { duelCard } from './duel.js';
 import { gameCard } from './game.js';
+import { arcadeCard } from './arcade.js';
 import { lessonStreak, lessonsCard, bindLessons } from './lessons.js';
 import { petCard } from './pet.js';
 
@@ -101,6 +102,7 @@ export async function statsView() {
     ${await petCard()}
     ${await storyCard()}
     ${await gameCard()}
+    ${arcadeCard()}
     ${await duelCard()}
     <section class="card">
       <h2>⭐ Баллы за неделю</h2>

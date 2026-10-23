@@ -27,7 +27,7 @@ export async function chips() {
   const [p, delta] = await Promise.all([petState(), S.getMeta('chips', 0)]);
   return { earned: p.total + GIFT, balance: Math.max(0, p.total + GIFT + delta) };
 }
-const addChips = async n => S.setMeta('chips', (await S.getMeta('chips', 0)) + n);
+export const addChips = async n => S.setMeta('chips', (await S.getMeta('chips', 0)) + n);
 
 export async function gameCard() {
   const c = await chips();

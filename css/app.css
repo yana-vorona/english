@@ -315,6 +315,35 @@ select.slot.missing { border-color: var(--bad); }
 .bets { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-bottom: 12px; }
 .flipin { animation: flipin .45s ease-out; }
 @keyframes flipin { from { transform: rotateY(90deg) scale(.8); opacity: 0; } to { transform: none; opacity: 1; } }
+.pc.mini { width: 30px; height: 44px; font-size: 16px; margin-left: -14px; }
+.pc.mini:first-child { margin-left: 0; }
+.row21.dk-him { min-height: 48px; gap: 0; }
+/* Ещё игры: 4 в ряд, Филлер, Дурак */
+.c4 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; background: #2F5DB8; padding: 8px; border-radius: 16px; margin-bottom: 12px; }
+.c4c { aspect-ratio: 1; border-radius: 50%; border: 0; padding: 0; background: var(--bg); cursor: pointer; }
+.c4c.p1 { background: #E5484D; }
+.c4c.p2 { background: #F5C518; }
+.c4c.drop { animation: drop4 .35s ease-in; }
+.c4c.win { box-shadow: inset 0 0 0 4px #fff; }
+@keyframes drop4 { from { transform: translateY(-250%); } to { transform: none; } }
+.fl { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+.fl i { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 18px; transition: background .3s; }
+.fl i.o1 { box-shadow: inset 0 0 0 2px rgba(255,255,255,.7); }
+.fl i.o2 { box-shadow: inset 0 0 0 2px rgba(0,0,0,.45); }
+.flc { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+.flc button { width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
+.flc button:disabled { opacity: .2; cursor: default; }
+button.pc { border: 0; font: inherit; padding: 0; cursor: pointer; transition: transform .15s; }
+button.pc.on { box-shadow: 0 0 0 3px #F5C518, 0 2px 6px rgba(0,0,0,.3); transform: translateY(-4px); }
+button.pc:disabled { opacity: .55; cursor: default; }
+.dk-mid { display: flex; gap: 12px; align-items: center; width: 100%; }
+.dk-deck { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.pc.trump { transform: rotate(90deg); margin: 8px 0; }
+.dk-table { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-height: 100px; align-items: center; }
+.dk-pair { position: relative; width: 66px; height: 100px; }
+.dk-pair .pc { position: absolute; top: 0; left: 0; }
+.dk-pair .pc.cover { top: 20px; left: 10px; }
+.dk-hand { margin-bottom: 12px; padding-top: 6px; }
 .tbar { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 8px; }
 .tbar i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #E5484D, #F28C28, #3BB273); }
 .fix-sticker { position: fixed; right: 14px; bottom: calc(92px + env(safe-area-inset-bottom)); z-index: 15;
