@@ -1,4 +1,4 @@
-// Питомец: растёт от бонусов. ДЗ — 3 бонуса, каждые 2 новые главы — 2 бонуса, каждые 30 повторённых слов — 2 бонуса.
+// Питомец: растёт от бонусов. ДЗ — 5 бонусов, каждые 2 новые главы — 2 бонуса, каждые 30 повторённых слов — 2 бонуса.
 // Набрала порог — новый облик (какой — сюрприз). Грустит, если к прошедшему уроку ДЗ не сделано.
 // Картинки — icons/pet/0..N.png (Microsoft Fluent Emoji 3D, MIT).
 import { lessonStreak, getCfg, lessonDates, lessonStatus, ymd } from './lessons.js';
@@ -8,7 +8,7 @@ import * as db from './db.js';
 const DAY = 86400000;
 const FIRST_WEEK = new Date(2026, 9, 19).getTime();   // пн 19.10 — с этой недели питомец растёт
 const FORMS = 7;
-const HW_PTS = 3, READ_N = 2, READ_PTS = 2, WORDS_N = 30, WORDS_PTS = 2;
+const HW_PTS = 5, READ_N = 2, READ_PTS = 2, WORDS_N = 30, WORDS_PTS = 2;
 // Сколько всего бонусов нужно для облика 2, 3, … 7. Шаги растут понемногу: первые облики быстрее.
 const STEPS = [15, 40, 75, 120, 180, 250];
 const dayStart = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
