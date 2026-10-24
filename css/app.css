@@ -478,3 +478,13 @@ body.wide #app { max-width: none; margin-right: 16px; }
 .petimg.sad { filter: grayscale(.6) brightness(.95); transform: rotate(-8deg); animation: none; }
 .card.pet h2 { margin: 0 0 4px; } .card.pet p { margin: 2px 0; }
 @keyframes petbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+/* «Отобрать знакомые» — выбор слов пачкой */
+.card-row.picked { background: var(--accent-soft); border-color: var(--accent); }
+.card-row .pk { font-size: 20px; color: var(--accent); margin-right: 4px; flex: none; }
+.selbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(124px + env(safe-area-inset-bottom)); z-index: 16;
+  display: flex; gap: 6px; align-items: center; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.18); width: min(608px, calc(100vw - 20px)); }
+.selbar[hidden] { display: none; }
+.selbar #selN { flex: 1; font-weight: 700; font-size: 14px; }
+.selbar .btn { padding: 8px 10px; font-size: 14px; }
+.cards.selecting { padding-bottom: 120px; }

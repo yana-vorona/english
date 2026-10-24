@@ -143,10 +143,22 @@ async function deckView(id) {
       <input class="search grow" type="search" placeholder="🔍 Найти слово">
       <a class="btn" href="#/import/${id}">⬇️ Импорт</a>
     </div>
+    <button class="btn wide" id="selBtn">✂️ Отобрать знакомые</button>
     <p class="muted" id="count"></p>
-    <div class="cards" id="list"></div>`;
+    <div class="cards" id="list"></div>
+    <div class="selbar" id="selbar" hidden><span id="selN"></span>
+      <button class="btn" id="selAll">все</button><button class="btn primary" id="selKnow">✅ Знаю</button>
+      <button class="btn danger-ghost" id="selDel">🗑</button><button class="btn ghost" id="selOff">✕</button></div>`;
 
   const list = $app.querySelector('#list');
+  // режим «отобрать знакомые»: тыкаешь слова пачкой → «Знаю» (в выученные) или «Удалить»
+  let sel = null;
+  const selBar = () => {
+    $app.querySelector('#selbar').hidden = !sel;
+    $app.querySelector('#selBtn').style.display = sel ? 'none' : '';
+    list.classList.toggle('selecting', !!sel);   // место под списком, чтобы полоска не закрывала последние слова
+    if (sel) $app.querySelector('#selN').textContent = `Выбрано: ${sel.size}`;
+  };
   const render = () => {
     const t = Date.now();
     const fresh = cards.filter(c => !c.box).length;
@@ -160,10 +172,32 @@ async function deckView(id) {
     const shown = f ? cards.filter(c => c.en.toLowerCase().includes(f) || c.ru.toLowerCase().includes(f)) : cards;
     $app.querySelector('#count').textContent = f ? `Найдено: ${shown.length} из ${cards.length}` : words(cards.length);
     list.innerHTML = shown.length
-      ? shown.map(c => `<button class="card-row" data-id="${c.id}"><span class="en">${esc(c.en)}</span><span class="ru">${esc(c.ru)}</span>${boxBadge(c)}</button>`).join('')
+      ? shown.map(c => `<button class="card-row${sel?.has(c.id) ? ' picked' : ''}" data-id="${c.id}"><span class="en">${sel ? `<b class="pk">${sel.has(c.id) ? '☑' : '☐'}</b> ` : ''}${esc(c.en)}</span><span class="ru">${esc(c.ru)}</span>${boxBadge(c)}</button>`).join('')
       : `<div class="empty">${cards.length ? 'Ничего не нашлось 🤷' : 'Слов пока нет. Добавь вручную или через импорт.'}</div>`;
+    selBar();
   };
   render();
+
+  $app.querySelector('#selBtn').onclick = () => { sel = new Set(); toast('Тыкай слова, которые уже знаешь 👆'); render(); };
+  $app.querySelector('#selOff').onclick = () => { sel = null; render(); };
+  $app.querySelector('#selAll').onclick = () => {
+    const f = filter.toLowerCase();
+    const shown = f ? cards.filter(c => c.en.toLowerCase().includes(f) || c.ru.toLowerCase().includes(f)) : cards;
+    if (shown.every(c => sel.has(c.id))) sel.clear(); else shown.forEach(c => sel.add(c.id));
+    render();
+  };
+  $app.querySelector('#selKnow').onclick = async () => {
+    if (!sel.size) return;
+    for (const cid of sel) await S.updateCard(cid, { box: S.LEARNED_BOX, due: null });
+    toast(`✅ ${words(sel.size)} — в выученные`);
+    sel = null; cards = await S.listCards(id); render();
+  };
+  $app.querySelector('#selDel').onclick = async () => {
+    if (!sel.size || !(await confirmBox(`Удалить ${words(sel.size)}?`))) return;
+    for (const cid of sel) await S.deleteCard(cid);
+    toast(`🗑 Удалено: ${words(sel.size)}`);
+    sel = null; cards = await S.listCards(id); render();
+  };
 
   // «Учить» и «Повторить» — сначала выбрать, сколько слов сейчас
   const pick = (btn, title, route, count) => btn.addEventListener('click', async e => {
@@ -191,6 +225,7 @@ async function deckView(id) {
   list.onclick = async e => {
     const row = e.target.closest('.card-row');
     if (!row) return;
+    if (sel) { sel.has(row.dataset.id) ? sel.delete(row.dataset.id) : sel.add(row.dataset.id); render(); return; }
     const c = cards.find(x => x.id === row.dataset.id);
     const res = await editCard(c);
     if (res === 'del') { await S.deleteCard(c.id); toast('Слово удалено'); }
