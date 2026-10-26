@@ -170,7 +170,7 @@ export async function updateCard(id, fields) {
   if ('en' in fields) c.en = clean(c.en);
   if ('ru' in fields) c.ru = clean(c.ru);
   // транскрипцию стёрли руками — больше не подбираем; поменяли слово — подберём заново
-  if ('tr' in fields) { c.tr = clean(c.tr); c.trNone = !c.tr; }
+  if ('tr' in fields) { c.tr = clean(c.tr); c.trNone = c.tr ? false : 'hand'; }
   else if (c.en !== oldEn) { delete c.tr; delete c.trNone; }
   await db.put('cards', c);
   return c;
@@ -183,8 +183,10 @@ export async function deleteCard(id) {
 // ---------- Транскрипция ----------
 // Не всем словам: юниты 8 и 9 и всё, что добавлено с 26.10.2026. Берём из бесплатного словаря
 // dictionaryapi.dev; не нашлось — помечаем trNone, чтобы не спрашивать снова. Поправить можно в карточке слова.
+// trNone: 'hand' — стёрла руками, 2 — словарь не знает; старое true — пробуем ещё раз (тогда сбой сети тоже метил так).
 const TR_SINCE = new Date(2026, 9, 26).getTime();
-const TR_DECKS = /(unit|юнит)\s*0*[89](?!\d)/i;
+const TR_DECKS = /(unit|юнит|u)\s*0*[89](?!\d)|(^|\D)0*[89]\s*(unit|юнит)/i;
+const SKIP_WORDS = new Set(['sb', 'sth', 'smb', 'smth', 'somebody', 'something', 'someone', "one's", 'one’s', 'etc']);
 const trCache = new Map();
 
 async function ipaOf(word) {
@@ -199,35 +201,40 @@ async function ipaOf(word) {
       ipa = (ph.find(p => /ˈ|ɒ|ə/.test(p)) || ph[0] || '').replace(/^[\/\[]|[\/\]]$/g, '');
     }
   } catch {}
-  trCache.set(word, ipa);
+  if (ipa !== null) trCache.set(word, ipa); // сбой не запоминаем, иначе слово молчит до перезапуска
   return ipa; // null — словарь недоступен, попробуем в другой раз
 }
 
-// «to interact» → interact; фраза до 4 слов — транскрипция каждого слова через пробел.
+// «to interact» → interact; фраза до 6 слов (без sb/sth) — транскрипция каждого слова через пробел.
+// Слово, которого нет в словаре, оставляем как есть, лишь бы хоть одно нашлось.
 async function transcribe(en) {
-  const ws = en.toLowerCase().replace(/\(.*?\)/g, ' ').replace(/^to\s+/, '').split(/[\s\/,]+/).filter(w => /^[a-z'’-]+$/.test(w));
-  if (!ws.length || ws.length > 4) return '';
+  const ws = en.toLowerCase().replace(/\(.*?\)/g, ' ').replace(/^to\s+/, '').split(/[\s\/,.!?;:]+/)
+    .filter(w => /^[a-z'’-]+$/.test(w) && !SKIP_WORDS.has(w));
+  if (!ws.length || ws.length > 6) return '';
   const parts = [];
+  let found = 0;
   for (const w of ws) {
     const p = await ipaOf(w);
-    if (!p) return p;
-    parts.push(p);
+    if (p === null) return null;
+    if (p) found++;
+    parts.push(p || w);
   }
-  return '/' + parts.join(' ') + '/';
+  return found ? '/' + parts.join(' ') + '/' : '';
 }
 
-let filling = false;
+let filling = false, retry = null;
 export async function fillTranscriptions() {
   if (filling || !navigator.onLine) return 0;
   filling = true;
+  clearTimeout(retry);
   let n = 0;
   try {
     const decks = new Set((await listDecks()).filter(d => TR_DECKS.test(d.name)).map(d => d.id));
-    const todo = (await allCards()).filter(c => !c.tr && !c.trNone && (decks.has(c.deckId) || c.createdAt >= TR_SINCE));
+    const todo = (await allCards()).filter(c => !c.tr && (!c.trNone || c.trNone === true) && (decks.has(c.deckId) || c.createdAt >= TR_SINCE));
     for (const c of todo) {
       const tr = await transcribe(c.en);
-      if (tr === null) break;
-      await updateCard(c.id, tr ? { tr } : { trNone: true });
+      if (tr === null) { retry = setTimeout(fillTranscriptions, 60000); break; } // словарь не ответил — через минуту ещё раз
+      await updateCard(c.id, tr ? { tr } : { trNone: 2 });
       if (tr) n++;
     }
   } finally {
