@@ -208,7 +208,6 @@ async function deckView(id) {
     if (r) location.hash = `${route}/${id}/${r.n}`;
   });
   const t0 = () => Date.now();
-  pick($app.querySelector('#learnBtn'), '🎓 Учить новые', '#/learn', () => cards.filter(c => !c.box).length);
   pick($app.querySelector('#revBtn'), '🔁 Повторить', '#/review', () => cards.filter(c => c.box >= 1 && c.box < S.LEARNED_BOX && c.due && c.due <= t0()).length);
 
   const form = $app.querySelector('form.add');

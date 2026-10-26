@@ -256,8 +256,10 @@ const RUN = {
 
 // ---------- Изучение новых ----------
 
-export async function learnView(deckId, n) {
-  const portion = +n || PORTION_NEW;
+// Порция новых: по 5, хвост не дробим — 6-7 одной порцией, 8 → 4+4, 9 → 4+5.
+const portionOf = left => left <= 7 ? left : left < 10 ? Math.floor(left / 2) : PORTION_NEW;
+
+export async function learnView(deckId) {
   const deck = await S.getDeck(deckId);
   if (!deck) { location.hash = '#/'; return; }
   const back = '#/deck/' + deckId;
@@ -273,7 +275,8 @@ export async function learnView(deckId, n) {
     if (batch.length === saved.ids.length) mode = saved.mode;
     else batch = [];
   }
-  if (!batch.length) batch = all.filter(c => !c.box).slice(0, portion);
+  const fresh = all.filter(c => !c.box);
+  if (!batch.length) batch = fresh.slice(0, portionOf(fresh.length));
 
   if (!batch.length) {
     frame(back, '🎓 Новых слов нет', 1).innerHTML = `
@@ -285,8 +288,12 @@ export async function learnView(deckId, n) {
   for (; mode < MODES.length; mode++) {
     save(key, { ids: batch.map(c => c.id), mode });
     const [kind, title] = MODES[mode];
-    const ex = frame(back, title, mode / MODES.length, `<span class="muted">${mode + 1}/${MODES.length}</span>`);
-    await RUN[kind](ex, batch, pool);
+    if (kind === 'type' && load('skipType', false)) continue;          // «без написания»
+    const skip = kind === 'type' ? '<button class="btn ghost mini" id="skipType">⏭ Пропустить</button>' : '';
+    const ex = frame(back, title, mode / MODES.length, `${skip}<span class="muted">${mode + 1}/${MODES.length}</span>`);
+    const run = RUN[kind](ex, batch, pool);
+    if (kind === 'type') await Promise.race([run, new Promise(r => { $app.querySelector('#skipType').onclick = r; })]);
+    else await run;
   }
 
   await S.markLearned(batch.map(c => c.id));
@@ -298,9 +305,11 @@ export async function learnView(deckId, n) {
       <p>${plural(batch.length, 'новое слово', 'новых слова', 'новых слов')} в коробке 1. Повторим завтра 😉</p>
       <ul class="done-list">${batch.map(c => `<li><b>${esc(c.en)}</b> — ${esc(c.ru)}</li>`).join('')}</ul>
     </div>
-    ${more ? `<a class="btn primary wide" href="#" id="again">Ещё ${Math.min(portion, more)} ${plural(Math.min(portion, more), 'слово', 'слова', 'слов')}</a>` : ''}
-    <a class="btn wide" href="${back}">Хватит на сегодня</a>`;
-  $app.querySelector('#again')?.addEventListener('click', e => { e.preventDefault(); learnView(deckId, portion); });
+    ${more ? `<a class="btn primary wide" href="#" id="again">Ещё ${portionOf(more)} ${plural(portionOf(more), 'слово', 'слова', 'слов')}</a>` : ''}
+    <a class="btn wide" href="${back}">Хватит на сегодня</a>
+    <label class="skiptype"><input type="checkbox" id="noType"${load('skipType', false) ? ' checked' : ''}> Без написания (режим «⌨️ Напечатай» не показывать)</label>`;
+  $app.querySelector('#again')?.addEventListener('click', e => { e.preventDefault(); learnView(deckId); });
+  $app.querySelector('#noType').onchange = e => save('skipType', e.target.checked);
 }
 
 // ---------- Повторение ----------

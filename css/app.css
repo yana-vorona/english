@@ -488,3 +488,7 @@ body.wide #app { max-width: none; margin-right: 16px; }
 .selbar #selN { flex: 1; font-weight: 700; font-size: 14px; }
 .selbar .btn { padding: 8px 10px; font-size: 14px; }
 .cards.selecting { padding-bottom: 120px; }
+/* «Учить новые»: пропустить написание */
+.btn.mini { padding: 4px 10px; font-size: 13px; min-height: 0; }
+.skiptype { display: flex; gap: 8px; align-items: center; justify-content: center; margin-top: 12px; font-size: 14px; color: var(--muted); }
+.skiptype input { width: 18px; height: 18px; min-height: 0; margin: 0; flex: none; accent-color: var(--accent); }
