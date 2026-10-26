@@ -2,7 +2,7 @@ import * as S from './store.js';
 import * as db from './db.js';
 import { parseText, readFileRows, guessColumns } from './importer.js';
 import { esc, plural, words, toast, load, save } from './ui.js';
-import { learnView, reviewView } from './study.js';
+import { learnView, reviewView, REVIEW_GAMES } from './study.js';
 import { syncConfig, syncStatus, syncNow, connect, disconnect, startSync } from './sync.js';
 import { startPalette } from './palette.js';
 import { trainerList, trainerRun } from './trainer.js';
@@ -42,13 +42,24 @@ function ask(title, value = '', ok = 'Сохранить') {
 }
 
 // «Сколько слов сейчас?» — порция по силам, а не все 60 разом. extra — доп. поля над выбором (темы для микса).
+// Сверху — чем повторять (игра запоминается до следующего раза).
 function howMany(title, max, extra = '') {
   return new Promise(resolve => {
     const opts = [5, 10, 15, 20, 30].filter(n => !max || n < max);
-    const d = dialog(`<h3>${title}</h3>${extra}<p class="muted">Сколько слов сейчас?</p>
+    let game = load('reviewGame', 'choice');
+    const d = dialog(`<h3>${title}</h3>${extra}<p class="muted">Как повторять?</p>
+      <div class="seg mini games">${REVIEW_GAMES.map(([k, t]) => `<button type="button" data-g="${k}" class="${k === game ? 'on' : ''}">${t}</button>`).join('')}</div>
+      <p class="muted">Сколько слов сейчас?</p>
       <div class="chips">${opts.map(n => `<button value="${n}" class="btn">${n}</button>`).join('')}${max ? `<button value="${max}" class="btn">все ${max}</button>` : ''}</div>
       <div class="row rev"><button value="cancel" class="btn ghost" formnovalidate>Отмена</button></div>`);
-    d.addEventListener('close', () => resolve(+d.returnValue ? { n: +d.returnValue, d } : null));
+    d.querySelectorAll('[data-g]').forEach(b => b.onclick = () => {
+      game = b.dataset.g;
+      d.querySelectorAll('[data-g]').forEach(x => x.classList.toggle('on', x === b));
+    });
+    d.addEventListener('close', () => {
+      if (+d.returnValue) save('reviewGame', game);
+      resolve(+d.returnValue ? { n: +d.returnValue, d } : null);
+    });
   });
 }
 

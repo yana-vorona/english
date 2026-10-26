@@ -99,13 +99,19 @@ function frame(back, title, part, extra = '') {
 }
 
 // Слова по очереди; done(true) — слово возвращается в конец списка.
-function runQueue(ex, batch, renderOne) {
+// mark(c, right) — первый ответ по слову (для повторения: он двигает коробку)
+function runQueue(ex, batch, renderOne, mark) {
   return new Promise(resolve => {
     const q = [...batch];
+    const met = new Set();
     const next = () => {
       if (!q.length) return resolve(true);
       const c = q.shift();
-      renderOne(c, again => { if (again) q.push(c); next(); }, q.length + 1);
+      renderOne(c, again => {
+        if (!met.has(c.id)) { met.add(c.id); mark?.(c, !again); }
+        if (again) q.push(c);
+        next();
+      }, q.length + 1);
     };
     next();
   });
@@ -143,7 +149,8 @@ const RUN = {
     render();
   }),
 
-  pair: (ex, batch) => new Promise(resolve => {
+  pair: (ex, batch, pool, mark) => new Promise(resolve => {
+    const missed = new Set();
     const btn = (c, side) => `<button class="pb" data-side="${side}" data-id="${c.id}">${esc(c[side])}</button>`;
     ex.innerHTML = `<div class="pairs">
       <div>${shuffle(batch).map(c => btn(c, 'en')).join('')}</div>
@@ -162,10 +169,12 @@ const RUN = {
       }
       const a = sel; sel = null; a.classList.remove('sel');
       if (a.dataset.id === b.dataset.id) {
+        mark?.(batch.find(c => String(c.id) === a.dataset.id), !missed.has(a.dataset.id));
         // найденная пара исчезает, чтобы не мешалась
         [a, b].forEach(x => { x.classList.add('ok'); x.disabled = true; setTimeout(() => x.remove(), 400); });
         if (--left === 0) setTimeout(() => resolve(true), 500);
       } else {
+        missed.add(a.dataset.id); missed.add(b.dataset.id);
         [a, b].forEach(x => x.classList.add('bad'));
         setTimeout(() => [a, b].forEach(x => x.classList.remove('bad')), 600);
       }
@@ -189,7 +198,7 @@ const RUN = {
     });
   }),
 
-  recall: (ex, batch) => runQueue(ex, batch, (c, done, left) => {
+  recall: (ex, batch, pool, mark) => runQueue(ex, batch, (c, done, left) => {
     ex.innerHTML = `
       <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}<div class="ex-tr hide" id="tr">${esc(c.ru)}</div></div>
       <p class="muted center" id="ask">&nbsp;</p>
@@ -214,9 +223,9 @@ const RUN = {
       tr.classList.remove('hide');
       nextButton(ex.querySelector('#btns'), () => done(true));
     };
-  }),
+  }, mark),
 
-  type: (ex, batch) => runQueue(ex, batch, (c, done, left) => {
+  type: (ex, batch, pool, mark) => runQueue(ex, batch, (c, done, left) => {
     ex.innerHTML = `
       <div class="flash"><div class="ex-word ru-big">${esc(c.ru)}</div></div>
       <form class="typeform" autocomplete="off">
@@ -262,7 +271,7 @@ const RUN = {
         inp.focus();
       }
     };
-  }),
+  }, mark),
 };
 
 // ---------- Изучение новых ----------
@@ -325,7 +334,17 @@ export async function learnView(deckId) {
 
 // ---------- Повторение ----------
 
-// Большой выбор («все 57») — пачками по 20-30, поровну, без хвостика в 1-2 слова: 57 → 29+28.
+// Чем повторять — выбирается в окне «Сколько слов сейчас?»
+export const REVIEW_GAMES = [
+  ['choice', '🔁 Выбор перевода'],
+  ['pair', '🧩 Пары'],
+  ['recall', '💭 Вспомни'],
+  ['type', '⌨️ Напечатай'],
+];
+const reviewGame = () => { const g = load('reviewGame', 'choice'); return REVIEW_GAMES.some(x => x[0] === g) ? g : 'choice'; };
+
+// В «Парах» большой выбор («все 57») — пачками по 20-30, поровну, без хвостика в 1-2 слова: 57 → 29+28.
+// В остальных играх слова идут по одному — делить не нужно.
 const packOf = n => n > 30 ? Math.ceil(n / Math.ceil(n / 30)) : n;
 
 // seen — слова, уже пройденные в прошлых пачках этого захода (чтобы ручной повтор и микс не повторяли их)
@@ -360,7 +379,9 @@ export async function reviewView(scope, n, seen = new Set()) {
   }
   const poolFor = c => ((byDeck.get(c.deckId) || []).length >= 4 ? byDeck.get(c.deckId) : all);
 
-  const portion = due.slice(0, packOf(Math.min(N, due.length)));
+  const game = reviewGame();
+  const pack = n => (game === 'pair' ? packOf(n) : n);
+  const portion = due.slice(0, pack(Math.min(N, due.length)));
   const total = portion.length;
   const queue = shuffle(portion).map(c => ({ c, retry: false }));
   const wrong = [];
@@ -443,10 +464,22 @@ export async function reviewView(scope, n, seen = new Set()) {
         <p>Повторено ${words(total)}.${bad && mix ? ' Трудные слова — ниже, глянь на них ещё разок.' : bad ? ' Ошибки вернулись в коробку 1 — завтра встретимся с ними снова.' : ' Без единой ошибки 🔥'}</p>
         ${wrong.length ? `<p class="muted">Трудные:</p><ul class="done-list">${wrong.map(c => `<li><b>${esc(c.en)}</b> — ${esc(c.ru)}</li>`).join('')}</ul>` : ''}
       </div>
-      ${left ? `<a class="btn primary wide" href="#" id="again">Ещё ${packOf(Math.min(nextN, left))} ${plural(packOf(Math.min(nextN, left)), 'слово', 'слова', 'слов')}</a>` : '<p class="center">На сегодня всё повторено 💪</p>'}
+      ${left ? `<a class="btn primary wide" href="#" id="again">Ещё ${pack(Math.min(nextN, left))} ${plural(pack(Math.min(nextN, left)), 'слово', 'слова', 'слов')}</a>` : '<p class="center">На сегодня всё повторено 💪</p>'}
       <a class="btn wide" href="${back}">Хватит на сегодня</a>`;
     $app.querySelector('#again')?.addEventListener('click', e => { e.preventDefault(); rest > 0 ? reviewView(scope, rest, seen) : reviewView(scope, N); });
   };
 
-  nextCard();
+  if (game === 'choice') return nextCard();
+
+  // Пары / Вспомни / Напечатай: засчитывается первый ответ по слову, как в «Выборе перевода»
+  const title = REVIEW_GAMES.find(g => g[0] === game)[1];
+  const ex = frame(back, title, 0, `<span class="muted">${words(total)}</span>`);
+  const saving = [];
+  await RUN[game](ex, shuffle(portion), null, (c, right) => {
+    if (!c) return;
+    if (right) ok++; else { bad++; wrong.push(c); }
+    saving.push(isDue(c) ? S.answerReview(c.id, right) : S.logEvent('review', c.id, right));
+  });
+  await Promise.all(saving);
+  finish();
 }
