@@ -165,15 +165,75 @@ export async function answerReview(id, ok) {
 
 export async function updateCard(id, fields) {
   const c = await db.get('cards', id);
+  const oldEn = c.en;
   Object.assign(c, fields, { updatedAt: now() });
   if ('en' in fields) c.en = clean(c.en);
   if ('ru' in fields) c.ru = clean(c.ru);
+  // транскрипцию стёрли руками — больше не подбираем; поменяли слово — подберём заново
+  if ('tr' in fields) { c.tr = clean(c.tr); c.trNone = !c.tr; }
+  else if (c.en !== oldEn) { delete c.tr; delete c.trNone; }
   await db.put('cards', c);
   return c;
 }
 
 export async function deleteCard(id) {
   await updateCard(id, { deleted: true });
+}
+
+// ---------- Транскрипция ----------
+// Не всем словам: юниты 8 и 9 и всё, что добавлено с 26.10.2026. Берём из бесплатного словаря
+// dictionaryapi.dev; не нашлось — помечаем trNone, чтобы не спрашивать снова. Поправить можно в карточке слова.
+const TR_SINCE = new Date(2026, 9, 26).getTime();
+const TR_DECKS = /(unit|юнит)\s*0*[89](?!\d)/i;
+const trCache = new Map();
+
+async function ipaOf(word) {
+  if (trCache.has(word)) return trCache.get(word);
+  let ipa = null;
+  try {
+    const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word), { signal: AbortSignal.timeout(10000) });
+    if (res.status === 404) ipa = '';
+    else if (res.ok) {
+      const list = await res.json();
+      const ph = list.flatMap(e => [e.phonetic, ...(e.phonetics || []).map(p => p.text)]).filter(Boolean);
+      ipa = (ph.find(p => /ˈ|ɒ|ə/.test(p)) || ph[0] || '').replace(/^[\/\[]|[\/\]]$/g, '');
+    }
+  } catch {}
+  trCache.set(word, ipa);
+  return ipa; // null — словарь недоступен, попробуем в другой раз
+}
+
+// «to interact» → interact; фраза до 4 слов — транскрипция каждого слова через пробел.
+async function transcribe(en) {
+  const ws = en.toLowerCase().replace(/\(.*?\)/g, ' ').replace(/^to\s+/, '').split(/[\s\/,]+/).filter(w => /^[a-z'’-]+$/.test(w));
+  if (!ws.length || ws.length > 4) return '';
+  const parts = [];
+  for (const w of ws) {
+    const p = await ipaOf(w);
+    if (!p) return p;
+    parts.push(p);
+  }
+  return '/' + parts.join(' ') + '/';
+}
+
+let filling = false;
+export async function fillTranscriptions() {
+  if (filling || !navigator.onLine) return 0;
+  filling = true;
+  let n = 0;
+  try {
+    const decks = new Set((await listDecks()).filter(d => TR_DECKS.test(d.name)).map(d => d.id));
+    const todo = (await allCards()).filter(c => !c.tr && !c.trNone && (decks.has(c.deckId) || c.createdAt >= TR_SINCE));
+    for (const c of todo) {
+      const tr = await transcribe(c.en);
+      if (tr === null) break;
+      await updateCard(c.id, tr ? { tr } : { trNone: true });
+      if (tr) n++;
+    }
+  } finally {
+    filling = false;
+  }
+  return n;
 }
 
 // ---------- Резервная копия (перенос между устройствами, пока нет облака) ----------

@@ -48,6 +48,8 @@ function say(text) {
 }
 
 const sayBtn = en => `<button type="button" class="icon say" data-say="${esc(en)}" aria-label="Произнести">🔊</button>`;
+// транскрипция под словом (есть не у всех слов — см. fillTranscriptions)
+const ipa = c => (c.tr ? `<div class="ex-ipa">${esc(c.tr)}</div>` : '');
 
 // Варианты ответа: сначала из той же темы, потом из остальных.
 function options(card, pool, field = 'ru', n = 4) {
@@ -132,7 +134,7 @@ const RUN = {
     const render = () => {
       const c = batch[i];
       ex.innerHTML = `
-        <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div><div class="ex-tr">${esc(c.ru)}</div></div>
+        <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}<div class="ex-tr">${esc(c.ru)}</div></div>
         <p class="muted center">${i + 1} из ${batch.length}</p>
         <button class="btn primary wide" id="nx">Дальше</button>`;
       ex.querySelector('#nx').onclick = () => (++i < batch.length ? render() : resolve(true));
@@ -172,7 +174,7 @@ const RUN = {
 
   guess: (ex, batch, pool) => runQueue(ex, batch, (c, done, left) => {
     ex.innerHTML = `
-      <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div></div>
+      <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}</div>
       <div class="opts">${options(c, pool).map(o => `<button class="opt">${esc(o)}</button>`).join('')}</div>
       <div id="after"></div><p class="muted center">Осталось: ${left}</p>`;
     say(c.en);
@@ -189,7 +191,7 @@ const RUN = {
 
   recall: (ex, batch) => runQueue(ex, batch, (c, done, left) => {
     ex.innerHTML = `
-      <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div><div class="ex-tr hide" id="tr">${esc(c.ru)}</div></div>
+      <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}<div class="ex-tr hide" id="tr">${esc(c.ru)}</div></div>
       <p class="muted center" id="ask">&nbsp;</p>
       <div class="two" id="btns"><button class="btn big" id="no">🤔 Не знаю</button><button class="btn primary big" id="yes">✅ Знаю</button></div>
       <p class="muted center">Осталось: ${left}</p>`;
@@ -231,7 +233,7 @@ const RUN = {
     const showAnswer = () => {
       finished = true;
       ex.querySelector('#btns').innerHTML = '';
-      res.innerHTML = `<p class="answer">Правильно: <b>${esc(c.en)}</b> ${sayBtn(c.en)}</p><div id="nxp"></div>`;
+      res.innerHTML = `<p class="answer">Правильно: <b>${esc(c.en)}</b> ${sayBtn(c.en)}</p>${ipa(c)}<div id="nxp"></div>`;
       say(c.en);
       nextButton(res.querySelector('#nxp'), () => done(true));
     };
@@ -375,7 +377,7 @@ export async function reviewView(scope, n) {
           <button data-m="lazy" class="${lazy ? 'on' : ''}">😌 Лениво</button>
         </div>
         <div class="flash">${item.retry ? '<span class="badge box">🔁 ещё раз</span>' : ''}
-          <div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div></div>
+          <div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}</div>
         <label class="check center"><input type="checkbox" id="hard" ${c.hard ? 'checked' : ''}> ⭐ Сложное слово — повторять чаще</label>
         <div id="area"></div><div id="after"></div>
         <p class="muted center">Осталось: ${queue.length + 1}</p>`;

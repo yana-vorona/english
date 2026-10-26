@@ -254,14 +254,15 @@ function editCard(c) {
     const d = dialog(`<h3>Слово</h3>
       <label>English<input name="en" value="${esc(c.en)}" lang="en" autocapitalize="off"></label>
       <label>Перевод<input name="ru" value="${esc(c.ru)}" lang="ru"></label>
+      <label>Транскрипция<input name="tr" value="${esc(c.tr || '')}" lang="en" autocapitalize="off" placeholder="/ˈwɜːd/"></label>
       <p class="muted">Коробка: ${c.box >= S.LEARNED_BOX ? 'выучено ✅' : c.box ? c.box : 'новое, ещё не изучали'}</p>
       <label class="check"><input type="checkbox" name="hard" ${c.hard ? 'checked' : ''}> ⭐ Сложное слово — повторять чаще</label>
       <div class="row rev"><button value="ok" class="btn primary">Сохранить</button><button value="cancel" class="btn ghost">Отмена</button><button value="del" class="btn danger-ghost">🗑</button></div>`);
     d.addEventListener('close', () => {
       const en = d.querySelector('[name=en]').value.trim(), ru = d.querySelector('[name=ru]').value.trim();
-      const hard = d.querySelector('[name=hard]').checked;
+      const hard = d.querySelector('[name=hard]').checked, tr = d.querySelector('[name=tr]').value.trim();
       if (d.returnValue === 'del') resolve('del');
-      else if (d.returnValue === 'ok' && en && ru && (en !== c.en || ru !== c.ru || hard !== !!c.hard)) resolve({ en, ru, hard });
+      else if (d.returnValue === 'ok' && en && ru && (en !== c.en || ru !== c.ru || hard !== !!c.hard || tr !== (c.tr || ''))) resolve({ en, ru, hard, ...(tr !== (c.tr || '') && { tr }) });
       else resolve(null);
     });
   });
@@ -727,6 +728,12 @@ async function giftWords() {
 }
 giftWords();
 window.addEventListener('synced', giftWords);
+
+// Транскрипция для юнитов 8, 9 и новых слов — подбирается тихо в фоне, когда есть интернет.
+let trTimer = null;
+const fillTr = () => { clearTimeout(trTimer); trTimer = setTimeout(() => S.fillTranscriptions(), 5000); };
+fillTr();
+['synced', 'online', 'localchange'].forEach(ev => window.addEventListener(ev, fillTr));
 
 // 📌 Стикер «Фиксить» (как в штабе): пишешь или говоришь → «Отправить» → отдельный Claude на ПК.
 const fixn = document.getElementById('fixn'), fixst = document.getElementById('fixnst');

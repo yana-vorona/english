@@ -160,6 +160,8 @@ label.check.center { justify-content: center; color: var(--muted); font-size: 15
 }
 .ex-word { font-size: 30px; font-weight: 700; overflow-wrap: break-word; }
 .ex-word.ru-big { font-size: 26px; }
+.ex-ipa { font-size: 17px; color: var(--muted); margin-top: 2px; font-family: "Segoe UI", "Noto Sans", Arial, sans-serif; }
+.answer + .ex-ipa { text-align: center; margin: -6px 0 8px; }
 .ex-tr { font-size: 22px; color: var(--muted); margin-top: 8px; }
 .ex-tr.hide { visibility: hidden; }
 .ex-tr.good { color: var(--ok); }
