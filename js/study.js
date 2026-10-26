@@ -194,10 +194,18 @@ const RUN = {
       <p class="muted center">Осталось: ${left}</p>`;
     const tr = ex.querySelector('#tr');
     say(c.en);
+    // «Знаю» — показываем перевод и спрашиваем, совпало ли: можно думать, что знаешь, а вспомнить не то.
     ex.querySelector('#yes').onclick = () => {
-      tr.classList.remove('hide'); tr.classList.add('good');
-      ex.querySelector('#btns').innerHTML = '';
-      setTimeout(() => done(false), 900);
+      tr.classList.remove('hide');
+      const btns = ex.querySelector('#btns');
+      btns.outerHTML = `<p class="muted center">Ты вспомнила так же?</p>
+        <div class="two" id="btns"><button class="btn big" id="miss">❌ Нет, ошиблась</button><button class="btn primary big" id="hit">✅ Да, верно</button></div>`;
+      ex.querySelector('#hit').onclick = () => {
+        tr.classList.add('good');
+        ex.querySelector('#btns').innerHTML = '';
+        setTimeout(() => done(false), 700);
+      };
+      ex.querySelector('#miss').onclick = () => done(true);
     };
     ex.querySelector('#no').onclick = () => {
       tr.classList.remove('hide');
