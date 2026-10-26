@@ -1,4 +1,5 @@
 import * as S from './store.js';
+import * as db from './db.js';
 import { parseText, readFileRows, guessColumns } from './importer.js';
 import { esc, plural, words, toast, load, save } from './ui.js';
 import { learnView, reviewView } from './study.js';
@@ -690,6 +691,37 @@ router();
 startSync();
 startPalette();
 startUpdates();
+
+// Слова, которые Яна попросила добавить через «Фиксить». У карточек постоянные id: на другом устройстве
+// не задвоятся, а удалённое слово не вернётся. Темы ещё нет (не пришла из облака) — ждём сверки.
+const GIFT_WORDS = [
+  { deck: /^2\.?\s*мои слова$/i, id: 'fix-2026-10-26-', words: [
+    ['confident', 'уверенный (в себе)'],
+    ['opportunity', 'возможность, шанс'],
+    ['curious', 'любопытный, любознательный'],
+    ['interact', 'взаимодействовать, общаться'],
+  ] },
+];
+async function giftWords() {
+  const decks = await S.listDecks();
+  let added = 0;
+  for (const g of GIFT_WORDS) {
+    const deck = decks.find(d => g.deck.test(d.name));
+    if (!deck) continue;
+    const t = Date.now(), fresh = [];
+    const have = new Set((await S.listCards(deck.id)).map(c => c.en.toLowerCase()));
+    for (const [i, [en, ru]] of g.words.entries()) {
+      const id = g.id + en;
+      if (have.has(en) || await db.get('cards', id)) continue;
+      fresh.push({ id, deckId: deck.id, en, ru, box: 0, due: null, createdAt: t + i, updatedAt: t });
+    }
+    await db.put('cards', fresh);
+    added += fresh.length;
+  }
+  if (added && (location.hash === '#/' || location.hash === '')) router();
+}
+giftWords();
+window.addEventListener('synced', giftWords);
 
 // 📌 Стикер «Фиксить» (как в штабе): пишешь или говоришь → «Отправить» → отдельный Claude на ПК.
 const fixn = document.getElementById('fixn'), fixst = document.getElementById('fixnst');
