@@ -326,16 +326,18 @@ export async function learnView(deckId) {
 // ---------- Повторение ----------
 
 export async function reviewView(scope, n) {
-  const mix = scope === 'mix';
-  const deckId = scope === 'all' || mix ? null : scope;
+  // early-<id> — ручной повтор темы раньше срока (как микс: коробки не двигаются)
+  const early = scope.startsWith('early-');
+  const mix = scope === 'mix' || early;
+  const deckId = scope === 'all' || scope === 'mix' ? null : early ? scope.slice(6) : scope;
   const back = deckId ? '#/deck/' + deckId : '#/';
   const N = +n || PORTION_REVIEW;
   const isDue = c => c.box >= 1 && c.box < S.LEARNED_BOX && c.due && c.due <= Date.now();
   // 🎲 микс: случайные слова из отмеченных тем — сначала пора повторить, потом ⭐ сложные, начатые, новые, выученные
   const mixPool = async () => {
-    const ids = load('mixDecks', null);
+    const ids = early ? [deckId] : load('mixDecks', null);
     const rank = c => isDue(c) ? 0 : c.hard ? 1 : c.box >= 1 && c.box < S.LEARNED_BOX ? 2 : !c.box ? 3 : 4;
-    return shuffle((await S.allCards()).filter(c => !ids || ids.includes(c.deckId))).sort((a, b) => rank(a) - rank(b));
+    return shuffle((await S.allCards()).filter(c => (!ids || ids.includes(c.deckId)) && (!early || c.box >= 1))).sort((a, b) => rank(a) - rank(b));
   };
   const due = mix ? await mixPool() : await S.dueCards(deckId);
 
@@ -429,7 +431,7 @@ export async function reviewView(scope, n) {
     frame(back, '🎉 Порция готова!', 1).innerHTML = `
       <div class="done-box">
         <p class="big-num">✅ ${ok} &nbsp; ❌ ${bad}</p>
-        <p>Повторено ${words(total)}.${bad ? ' Ошибки вернулись в коробку 1 — завтра встретимся с ними снова.' : ' Без единой ошибки 🔥'}</p>
+        <p>Повторено ${words(total)}.${bad && mix ? ' Трудные слова — ниже, глянь на них ещё разок.' : bad ? ' Ошибки вернулись в коробку 1 — завтра встретимся с ними снова.' : ' Без единой ошибки 🔥'}</p>
         ${wrong.length ? `<p class="muted">Трудные:</p><ul class="done-list">${wrong.map(c => `<li><b>${esc(c.en)}</b> — ${esc(c.ru)}</li>`).join('')}</ul>` : ''}
       </div>
       ${left ? `<a class="btn primary wide" href="#" id="again">Ещё ${Math.min(N, left)} ${plural(Math.min(N, left), 'слово', 'слова', 'слов')}</a>` : '<p class="center">На сегодня всё повторено 💪</p>'}

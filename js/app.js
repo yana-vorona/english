@@ -171,8 +171,10 @@ async function deckView(id) {
     const lb = $app.querySelector('#learnBtn'), rb = $app.querySelector('#revBtn');
     lb.textContent = fresh ? `🎓 Учить новые (${fresh})` : '🎓 Новых нет';
     lb.classList.toggle('off', !fresh);
-    rb.textContent = due ? `🔁 Повторить (${due})` : '🔁 Повторять рано';
-    rb.classList.toggle('off', !due);
+    // срок ещё не подошёл — всё равно можно повторить вручную уже изученные слова
+    const studied = cards.filter(c => c.box >= 1).length;
+    rb.textContent = due ? `🔁 Повторить (${due})` : studied ? `🔁 Повторить сейчас (${studied})` : '🔁 Повторять рано';
+    rb.classList.toggle('off', !due && !studied);
     const f = filter.toLowerCase();
     const shown = f ? cards.filter(c => c.en.toLowerCase().includes(f) || c.ru.toLowerCase().includes(f)) : cards;
     $app.querySelector('#count').textContent = f ? `Найдено: ${shown.length} из ${cards.length}` : words(cards.length);
@@ -204,15 +206,16 @@ async function deckView(id) {
     sel = null; cards = await S.listCards(id); render();
   };
 
-  // «Учить» и «Повторить» — сначала выбрать, сколько слов сейчас
-  const pick = (btn, title, route, count) => btn.addEventListener('click', async e => {
-    e.preventDefault();
-    if (btn.classList.contains('off')) return;
-    const r = await howMany(title, count());
-    if (r) location.hash = `${route}/${id}/${r.n}`;
-  });
+  // «Повторить» — сначала выбрать, сколько слов сейчас; срок не подошёл — ручной повтор (early-)
   const t0 = () => Date.now();
-  pick($app.querySelector('#revBtn'), '🔁 Повторить', '#/review', () => cards.filter(c => c.box >= 1 && c.box < S.LEARNED_BOX && c.due && c.due <= t0()).length);
+  $app.querySelector('#revBtn').addEventListener('click', async e => {
+    e.preventDefault();
+    const btn = e.currentTarget;
+    if (btn.classList.contains('off')) return;
+    const due = cards.filter(c => c.box >= 1 && c.box < S.LEARNED_BOX && c.due && c.due <= t0()).length;
+    const r = await howMany(due ? '🔁 Повторить' : '🔁 Повторить сейчас', due || cards.filter(c => c.box >= 1).length);
+    if (r) location.hash = `#/review/${due ? '' : 'early-'}${id}/${r.n}`;
+  });
 
   const form = $app.querySelector('form.add');
   form.onsubmit = async e => {
