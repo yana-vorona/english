@@ -190,16 +190,17 @@ const RUN = {
   recall: (ex, batch) => runQueue(ex, batch, (c, done, left) => {
     ex.innerHTML = `
       <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div><div class="ex-tr hide" id="tr">${esc(c.ru)}</div></div>
+      <p class="muted center" id="ask">&nbsp;</p>
       <div class="two" id="btns"><button class="btn big" id="no">🤔 Не знаю</button><button class="btn primary big" id="yes">✅ Знаю</button></div>
       <p class="muted center">Осталось: ${left}</p>`;
     const tr = ex.querySelector('#tr');
     say(c.en);
     // «Знаю» — показываем перевод и спрашиваем, совпало ли: можно думать, что знаешь, а вспомнить не то.
+    // Строка вопроса зарезервирована заранее, чтобы «Да, верно» встала ровно на место «Знаю».
     ex.querySelector('#yes').onclick = () => {
       tr.classList.remove('hide');
-      const btns = ex.querySelector('#btns');
-      btns.outerHTML = `<p class="muted center">Ты вспомнила так же?</p>
-        <div class="two" id="btns"><button class="btn big" id="miss">❌ Нет, ошиблась</button><button class="btn primary big" id="hit">✅ Да, верно</button></div>`;
+      ex.querySelector('#ask').textContent = 'Ты вспомнила так же?';
+      ex.querySelector('#btns').innerHTML = `<button class="btn big" id="miss">❌ Нет, ошиблась</button><button class="btn primary big" id="hit">✅ Да, верно</button>`;
       ex.querySelector('#hit').onclick = () => {
         tr.classList.add('good');
         ex.querySelector('#btns').innerHTML = '';
