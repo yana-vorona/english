@@ -537,8 +537,10 @@ async function fixView() {
   const all = await S.listFixes();
   const num = new Map([...all].sort((a, b) => (a.at || 0) - (b.at || 0)).map((f, i) => [f.id, i + 1]));
   const vis = fixAll ? all : all.filter(f => !f.seen);
-  const answered = vis.filter(f => f.status === 'done').sort((a, b) => (!!a.viewed - !!b.viewed) || (b.doneAt || 0) - (a.doneAt || 0));
-  const waiting = vis.filter(f => f.status !== 'done').sort((a, b) => (a.at || 0) - (b.at || 0));
+  // отработанные (закрытые) — ниже открытых, в хронологии: самые свежие сверху
+  const fresh = f => f.doneAt || f.at || 0;
+  const answered = vis.filter(f => f.status === 'done').sort((a, b) => (!!a.seen - !!b.seen) || (!a.seen && (!!a.viewed - !!b.viewed)) || fresh(b) - fresh(a));
+  const waiting = vis.filter(f => f.status !== 'done').sort((a, b) => (!!a.seen - !!b.seen) || (a.seen ? fresh(b) - fresh(a) : (a.at || 0) - (b.at || 0)));
   const toClose = all.filter(f => f.status === 'done' && !f.seen);
   const card = f => {
     const c = f.seen ? 'd' : f.status === 'done' ? 'g' : f.status === 'work' ? 'b' : 'y';
