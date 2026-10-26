@@ -1,6 +1,6 @@
 // Питомец: растёт от бонусов. ДЗ — 5 бонусов, каждые 2 новые главы — 2 бонуса, каждые 30 повторённых слов — 2 бонуса.
 // Набрала порог — новый облик (какой — сюрприз). Грустит, если к прошедшему уроку ДЗ не сделано.
-// Картинки — icons/pet/0..N.png (Microsoft Fluent Emoji 3D, MIT).
+// Картинки — icons/pet/0..N.svg (нарисованы в стиле лисичек-иконок).
 import { lessonStreak, getCfg, lessonDates, lessonStatus, ymd } from './lessons.js';
 import * as S from './store.js';
 import * as db from './db.js';
@@ -60,7 +60,7 @@ export async function petCard() {
     <p class="muted">${p.maxed ? 'Это самый последний облик — ты дошла до конца 🏆'
       : `Всего ${p.total} 🍪. Новый облик — на ${p.next} 🍪, осталось ${p.next - p.total} 🍪.`}</p>`;
   return `<section class="card pet">
-    <img class="petimg${p.sad ? ' sad' : ''}" src="icons/pet/${p.level}.png" alt="">
+    <img class="petimg${p.sad ? ' sad' : ''}" src="icons/pet/${p.level}.svg" alt="">
     <div><h2>🐾 Питомец · облик ${p.level + 1} из ${FORMS}</h2>
       <p class="muted">${mood}</p>${how}</div>
   </section>`;
