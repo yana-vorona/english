@@ -201,10 +201,10 @@ const RUN = {
     // Строка вопроса зарезервирована заранее, чтобы «Да, верно» встала ровно на место «Знаю».
     ex.querySelector('#yes').onclick = () => {
       tr.classList.remove('hide');
+      tr.classList.add('good');
       ex.querySelector('#ask').textContent = 'Ты вспомнила так же?';
       ex.querySelector('#btns').innerHTML = `<button class="btn big" id="miss">❌ Нет, ошиблась</button><button class="btn primary big" id="hit">✅ Да, верно</button>`;
       ex.querySelector('#hit').onclick = () => {
-        tr.classList.add('good');
         ex.querySelector('#btns').innerHTML = '';
         setTimeout(() => done(false), 700);
       };
