@@ -114,6 +114,7 @@ const RUN = {
         <p class="muted center">${i + 1} из ${batch.length}</p>
         <button class="btn primary wide" id="nx">Дальше</button>`;
       ex.querySelector('#nx').onclick = () => (++i < batch.length ? render() : resolve(true));
+      say(c.en);
     };
     render();
   }),
@@ -152,6 +153,7 @@ const RUN = {
       <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div></div>
       <div class="opts">${options(c, pool).map(o => `<button class="opt">${esc(o)}</button>`).join('')}</div>
       <div id="after"></div><p class="muted center">Осталось: ${left}</p>`;
+    say(c.en);
     // Ошибка: правильный не подсвечиваем — тыкаешь дальше, пока не найдёшь; слово с ошибкой вернётся в конец.
     let missed = false;
     ex.querySelectorAll('.opt').forEach(b => b.onclick = () => {
@@ -169,6 +171,7 @@ const RUN = {
       <div class="two" id="btns"><button class="btn big" id="no">🤔 Не знаю</button><button class="btn primary big" id="yes">✅ Знаю</button></div>
       <p class="muted center">Осталось: ${left}</p>`;
     const tr = ex.querySelector('#tr');
+    say(c.en);
     ex.querySelector('#yes').onclick = () => {
       tr.classList.remove('hide'); tr.classList.add('good');
       ex.querySelector('#btns').innerHTML = '';
