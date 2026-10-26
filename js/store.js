@@ -87,8 +87,9 @@ export async function allStats() {
   const out = {};
   for (const c of await db.getAll('cards')) {
     if (c.deleted) continue;
-    const s = out[c.deckId] ||= { total: 0, learned: 0, due: 0, fresh: 0, score: 0 };
+    const s = out[c.deckId] ||= { total: 0, learned: 0, due: 0, fresh: 0, score: 0, last: 0 };
     s.total++;
+    if (c.box > 0) s.last = Math.max(s.last, c.updatedAt || 0); // когда последний раз учила/повторяла
     s.score += Math.min(c.box || 0, LEARNED_BOX) / LEARNED_BOX; // каждая коробка — шаг к 100%
     if (c.box >= LEARNED_BOX) s.learned++;
     else if (c.box === 0) s.fresh++;

@@ -82,9 +82,10 @@ function boxBadge(c) {
 
 async function home() {
   const [decks, stats, st] = await Promise.all([S.listDecks(), S.allStats(), computeStats()]);
-  // темы, которые начала учить (есть изученные слова, но не всё выучено), — наверху
+  // темы, которые начала учить (есть изученные слова, но не всё выучено), — наверху, самая свежая первой
   const started = d => { const s = stats[d.id]; return s && s.score > 0 && s.learned < s.total ? 0 : 1; };
-  decks.sort((a, b) => started(a) - started(b));
+  const last = d => (started(d) ? 0 : stats[d.id].last);
+  decks.sort((a, b) => started(a) - started(b) || last(b) - last(a));
   const sum = Object.values(stats).reduce((a, s) => ({ total: a.total + s.total, due: a.due + s.due }), { total: 0, due: 0 });
   $app.innerHTML = `
     <header class="top"><h1 class="fh"><img src="icons/fox-words.png" alt="">Мои слова</h1></header>
