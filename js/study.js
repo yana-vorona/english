@@ -325,7 +325,11 @@ export async function learnView(deckId) {
 
 // ---------- Повторение ----------
 
-export async function reviewView(scope, n) {
+// Большой выбор («все 57») — пачками по 20-30, поровну, без хвостика в 1-2 слова: 57 → 29+28.
+const packOf = n => n > 30 ? Math.ceil(n / Math.ceil(n / 30)) : n;
+
+// seen — слова, уже пройденные в прошлых пачках этого захода (чтобы ручной повтор и микс не повторяли их)
+export async function reviewView(scope, n, seen = new Set()) {
   // early-<id> — ручной повтор темы раньше срока (как микс: коробки не двигаются)
   const early = scope.startsWith('early-');
   const mix = scope === 'mix' || early;
@@ -339,7 +343,7 @@ export async function reviewView(scope, n) {
     const rank = c => isDue(c) ? 0 : c.hard ? 1 : c.box >= 1 && c.box < S.LEARNED_BOX ? 2 : !c.box ? 3 : 4;
     return shuffle((await S.allCards()).filter(c => (!ids || ids.includes(c.deckId)) && (!early || c.box >= 1))).sort((a, b) => rank(a) - rank(b));
   };
-  const due = mix ? await mixPool() : await S.dueCards(deckId);
+  const due = (mix ? await mixPool() : await S.dueCards(deckId)).filter(c => !seen.has(c.id));
 
   if (!due.length) {
     frame(back, '🔁 Повторение', 1).innerHTML = `
@@ -356,7 +360,7 @@ export async function reviewView(scope, n) {
   }
   const poolFor = c => ((byDeck.get(c.deckId) || []).length >= 4 ? byDeck.get(c.deckId) : all);
 
-  const portion = due.slice(0, N);
+  const portion = due.slice(0, packOf(Math.min(N, due.length)));
   const total = portion.length;
   const queue = shuffle(portion).map(c => ({ c, retry: false }));
   const wrong = [];
@@ -427,16 +431,21 @@ export async function reviewView(scope, n) {
   };
 
   const finish = async () => {
-    const left = mix ? N : (await S.dueCards(deckId)).length;
+    portion.forEach(c => seen.add(c.id));
+    // остаток выбранного числа — следующей пачкой; выбранное кончилось — как раньше, новая порция
+    const avail = (mix ? await mixPool() : await S.dueCards(deckId)).filter(c => !seen.has(c.id)).length;
+    const rest = Math.min(N - total, avail);
+    const left = rest > 0 ? rest : mix ? N : (await S.dueCards(deckId)).length;
+    const nextN = rest > 0 ? rest : N;
     frame(back, '🎉 Порция готова!', 1).innerHTML = `
       <div class="done-box">
         <p class="big-num">✅ ${ok} &nbsp; ❌ ${bad}</p>
         <p>Повторено ${words(total)}.${bad && mix ? ' Трудные слова — ниже, глянь на них ещё разок.' : bad ? ' Ошибки вернулись в коробку 1 — завтра встретимся с ними снова.' : ' Без единой ошибки 🔥'}</p>
         ${wrong.length ? `<p class="muted">Трудные:</p><ul class="done-list">${wrong.map(c => `<li><b>${esc(c.en)}</b> — ${esc(c.ru)}</li>`).join('')}</ul>` : ''}
       </div>
-      ${left ? `<a class="btn primary wide" href="#" id="again">Ещё ${Math.min(N, left)} ${plural(Math.min(N, left), 'слово', 'слова', 'слов')}</a>` : '<p class="center">На сегодня всё повторено 💪</p>'}
+      ${left ? `<a class="btn primary wide" href="#" id="again">Ещё ${packOf(Math.min(nextN, left))} ${plural(packOf(Math.min(nextN, left)), 'слово', 'слова', 'слов')}</a>` : '<p class="center">На сегодня всё повторено 💪</p>'}
       <a class="btn wide" href="${back}">Хватит на сегодня</a>`;
-    $app.querySelector('#again')?.addEventListener('click', e => { e.preventDefault(); reviewView(scope, N); });
+    $app.querySelector('#again')?.addEventListener('click', e => { e.preventDefault(); rest > 0 ? reviewView(scope, rest, seen) : reviewView(scope, N); });
   };
 
   nextCard();
