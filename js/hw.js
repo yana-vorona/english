@@ -244,7 +244,9 @@ export async function hwRun(id) {
   if (!c) {
     $app.innerHTML = `
       <header class="top"><a class="back" href="${back}">‹</a><h1 class="grow">${esc(title(h))}</h1><button class="icon" id="del">🗑</button></header>
-      <div class="empty">⏳ Упражнение ещё не разложено по кнопкам.<br>Как только будет готово, оно появится здесь само.</div>
+      ${h.skip
+        ? `<div class="empty">🤷 Не получилось разложить по кнопкам:<br>${esc(h.skip)}<br><br>Сделай в тетради и нажми «Сделала».</div>`
+        : '<div class="empty">⏳ Упражнение ещё не разложено по кнопкам.<br>Как только будет готово, оно появится здесь само.</div>'}
       ${h.status === 'done' ? '<p class="center">✅ Сделано</p>' : '<button class="btn primary wide" id="manual">✓ Сделала (в тетради, видео…)</button>'}`;
     bindDelete(h);
     bindManual(h);
