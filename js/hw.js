@@ -303,6 +303,7 @@ export async function hwRun(id) {
       <p class="muted">⏱ ~${mins} мин · ${DIFF[diff]} · ${esc(formatOf(c))}${h.lesson ? ` · к уроку ${esc(fmtDate(h.lesson))}` : ''}</p>
       ${manualDone ? '<p class="card">✅ Отмечено, что сделала (в тетради). Можно посмотреть или пройти здесь с проверкой.</p>' : ''}
       ${c.instruction ? `<p class="instr">${esc(c.instruction)}</p>` : ''}
+      ${c.img ? `<img class="hwimg" src="${esc(c.img)}" alt="страница тетради">` : ''}
       ${textBlock}
       ${items ? `<ol class="hwitems">${items}</ol>` : ''}
       <p class="warn" id="left"></p>

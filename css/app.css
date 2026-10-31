@@ -497,3 +497,5 @@ body.wide #app { max-width: none; margin-right: 16px; }
 /* пример к слову */
 .exmp { display: block; width: 100%; font-size: 13.5px; font-style: italic; color: var(--muted); margin-top: 4px; text-align: left; }
 .flash .exmp { text-align: center; font-size: 15px; margin-top: 10px; }
+
+.hwimg{display:block;width:100%;max-width:560px;margin:8px auto 12px;border-radius:10px;background:#fff}
