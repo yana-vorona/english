@@ -190,7 +190,7 @@ async function deckView(id) {
     const shown = f ? cards.filter(c => c.en.toLowerCase().includes(f) || c.ru.toLowerCase().includes(f)) : cards;
     $app.querySelector('#count').textContent = f ? `Найдено: ${shown.length} из ${cards.length}` : words(cards.length);
     list.innerHTML = shown.length
-      ? shown.map(c => `<button class="card-row${sel?.has(c.id) ? ' picked' : ''}" data-id="${c.id}"><span class="en">${sel ? `<b class="pk">${sel.has(c.id) ? '☑' : '☐'}</b> ` : ''}${esc(c.en)}</span><span class="ru">${esc(c.ru)}</span>${boxBadge(c)}</button>`).join('')
+      ? shown.map(c => `<button class="card-row${sel?.has(c.id) ? ' picked' : ''}" data-id="${c.id}"><span class="en">${sel ? `<b class="pk">${sel.has(c.id) ? '☑' : '☐'}</b> ` : ''}${esc(c.en)}</span><span class="ru">${esc(c.ru)}</span>${boxBadge(c)}${c.example ? `<span class="exmp">${esc(c.example)}</span>` : ''}</button>`).join('')
       : `<div class="empty">${cards.length ? 'Ничего не нашлось 🤷' : 'Слов пока нет. Добавь вручную или через импорт.'}</div>`;
     selBar();
   };
@@ -269,14 +269,17 @@ function editCard(c) {
       <label>English<input name="en" value="${esc(c.en)}" lang="en" autocapitalize="off"></label>
       <label>Перевод<input name="ru" value="${esc(c.ru)}" lang="ru"></label>
       <label>Транскрипция<input name="tr" value="${esc(c.tr || '')}" lang="en" autocapitalize="off" placeholder="/ˈwɜːd/"></label>
+      <label>Пример<textarea name="example" rows="2" lang="en" placeholder="I'd like to borrow your pen.">${esc(c.example || '')}</textarea></label>
       <p class="muted">Коробка: ${c.box >= S.LEARNED_BOX ? 'выучено ✅' : c.box ? c.box : 'новое, ещё не изучали'}</p>
       <label class="check"><input type="checkbox" name="hard" ${c.hard ? 'checked' : ''}> ⭐ Сложное слово — повторять чаще</label>
       <div class="row rev"><button value="ok" class="btn primary">Сохранить</button><button value="cancel" class="btn ghost">Отмена</button><button value="del" class="btn danger-ghost">🗑</button></div>`);
     d.addEventListener('close', () => {
       const en = d.querySelector('[name=en]').value.trim(), ru = d.querySelector('[name=ru]').value.trim();
       const hard = d.querySelector('[name=hard]').checked, tr = d.querySelector('[name=tr]').value.trim();
+      const example = d.querySelector('[name=example]').value.trim();
       if (d.returnValue === 'del') resolve('del');
-      else if (d.returnValue === 'ok' && en && ru && (en !== c.en || ru !== c.ru || hard !== !!c.hard || tr !== (c.tr || ''))) resolve({ en, ru, hard, ...(tr !== (c.tr || '') && { tr }) });
+      else if (d.returnValue === 'ok' && en && ru && (en !== c.en || ru !== c.ru || hard !== !!c.hard || tr !== (c.tr || '') || example !== (c.example || '')))
+        resolve({ en, ru, hard, ...(tr !== (c.tr || '') && { tr }), ...(example !== (c.example || '') && { example }) });
       else resolve(null);
     });
   });

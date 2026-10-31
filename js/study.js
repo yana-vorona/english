@@ -140,7 +140,7 @@ const RUN = {
     const render = () => {
       const c = batch[i];
       ex.innerHTML = `
-        <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}<div class="ex-tr">${esc(c.ru)}</div></div>
+        <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}<div class="ex-tr">${esc(c.ru)}</div>${c.example ? `<div class="exmp">${esc(c.example)} ${sayBtn(c.example)}</div>` : ''}</div>
         <p class="muted center">${i + 1} из ${batch.length}</p>
         <button class="btn primary wide" id="nx">Дальше</button>`;
       ex.querySelector('#nx').onclick = () => (++i < batch.length ? render() : resolve(true));
