@@ -299,6 +299,9 @@ export async function getHw(id) {
 }
 
 export async function saveHw(h) {
+  // содержимое упражнения правит ПК (contentAt) - старая копия на открытой странице не должна его затереть
+  const cur = await db.get('hw', h.id);
+  if (cur && (cur.contentAt || 0) > (h.contentAt || 0)) { h.content = cur.content; h.contentAt = cur.contentAt; }
   h.updatedAt = now();
   await db.put('hw', h);
   return h;
