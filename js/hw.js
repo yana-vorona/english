@@ -77,7 +77,23 @@ const short = s => norm(s)
   .replace(/\b(i|you|he|she|it|we|they) will\b/g, "$1'll")
   .replace(/\s+/g, ' ').trim();
 // «he had seen…», когда «he» уже стоит перед пропуском, тоже верно
-const same = (a, b) => short(a) === short(b) || short(norm(a).replace(/^(i|you|he|she|it|we|they) /, '')) === short(b);
+// Опечатка: отличается одно слово на одну букву (cann't, sombody), слово длинное - иначе это грамматика (has/had, is/it)
+const lev1 = (x, y) => {
+  if (Math.abs(x.length - y.length) > 1) return false;
+  let i = 0; while (i < x.length && x[i] === y[i]) i++;
+  return x.slice(i + (x.length >= y.length ? 1 : 0)) === y.slice(i + (y.length >= x.length ? 1 : 0)) && x !== y;
+};
+const typo = (a, b) => String(b ?? '').split(' | ').some(b1 => {
+  const x = short(a).split(' '), y = short(b1).split(' ');
+  if (x.length !== y.length) return false;
+  const d = x.map((w, k) => [w, y[k]]).filter(([w, v]) => w !== v);
+  return d.length === 1 && d[0][1].length >= 5 && lev1(d[0][0], d[0][1]);
+});
+// ok - верно, typo - опечатка (засчитываем, но показываем), bad - ошибка
+const grade = (a, b) => same(a, b) ? 'ok' : typo(a, b) ? 'typo' : 'bad';
+// в ключе можно несколько верных вариантов через « | »
+const same = (a, b) => String(b ?? '').split(' | ').some(b1 =>
+  short(a) === short(b1) || short(norm(a).replace(/^(i|you|he|she|it|we|they) /, '')) === short(b1));
 const fmtDate = d => d ? new Date(d + 'T00:00').toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', weekday: 'short' }) : '';
 
 
@@ -278,7 +294,7 @@ export async function hwRun(id) {
   // Виджет одного места выбора.
   const widget = i => {
     const s = slots[i], v = answers[i] ?? '';
-    const st = checked ? (same(v, c.answers[i]) ? ' ok' : ' bad') : '';
+    const st = checked ? ' ' + grade(v, c.answers[i]) : '';
     if (s.kind === 'inline') {
       return `<span class="slot${st}" data-s="${i}">${s.opts.map(o =>
         `<button type="button" class="ch${norm(v) === norm(o) ? ' sel' : ''}" data-s="${i}" data-v="${esc(o)}"${checked ? ' disabled' : ''}>${esc(o)}</button>`).join('')}</span>`;
@@ -294,7 +310,7 @@ export async function hwRun(id) {
     return `<span class="slot${st}" data-s="${i}">${s.opts.map((o, k) =>
       `<button type="button" class="ch${norm(v) === norm(o) ? ' sel' : ''}" data-s="${i}" data-v="${esc(o)}"${checked ? ' disabled' : ''}>${'abcd'[k]} ${esc(o)}</button>`).join('')}</span>`;
   };
-  const fix = i => (checked && !same(answers[i], c.answers[i]) ? `<span class="fix">→ ${esc(c.answers[i])}</span>` : '');
+  const fix = i => (checked && !same(answers[i], c.answers[i]) ? `<span class="fix${grade(answers[i], c.answers[i]) === 'typo' ? ' typo' : ''}">${grade(answers[i], c.answers[i]) === 'typo' ? 'опечатка → ' : '→ '}${esc(String(c.answers[i]).split(' | ').join(' / '))}</span>` : '');
 
   // «…из упражнения 2» - текст того упражнения (с ответами по ключу) рядом: справа на компьютере, сверху на телефоне
   let refHtml = '';
@@ -323,7 +339,7 @@ export async function hwRun(id) {
     const textBlock = c.type === 'textab'
       ? `<div class="flash hwtext">${esc(c.text).replace(/\{(\d+)\}/g, (_, k) => {
           const i = +k - 1, v = answers[i];
-          const st = checked ? (same(v, c.answers[i]) ? 'good' : 'wrong') : (v ? 'filled' : '');
+          const st = checked ? { ok: 'good', typo: 'typo', bad: 'wrong' }[grade(v, c.answers[i])] : (v ? 'filled' : '');
           return `<span class="gap ${st}">${v ? esc(v) : `___${k}`}</span>`;
         })}</div>
         <div class="ablines">${(c.choices || []).map((_, i) => `<div class="abline"><b>${i + 1}:</b> ${widget(i)} ${fix(i)}</div>`).join('')}</div>`
@@ -413,7 +429,7 @@ export async function hwRun(id) {
     }
     let right = 0;
     for (let i = 0; i < slots.length; i++) {
-      const ok = same(answers[i], c.answers[i]);
+      const ok = grade(answers[i], c.answers[i]) !== 'bad';
       if (ok) right++;
       else if (slots[i].opts) {
         const it = c.items?.[slots[i].item];
