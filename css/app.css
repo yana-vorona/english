@@ -517,3 +517,6 @@ body.wide #app { max-width: none; margin-right: 16px; }
   .hwside a.on { background: var(--accent, #6c5ce7); color: #fff; }
   .hwside small { display: block; opacity: .7; font-size: .8em; }
 }
+
+/* пустая часть стикера не должна закрывать список слева */
+#stickers { pointer-events: none; } #stickers > * { pointer-events: auto; }
