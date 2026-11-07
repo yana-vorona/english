@@ -310,7 +310,13 @@ export async function hwRun(id) {
     return `<span class="slot${st}" data-s="${i}">${s.opts.map((o, k) =>
       `<button type="button" class="ch${norm(v) === norm(o) ? ' sel' : ''}" data-s="${i}" data-v="${esc(o)}"${checked ? ' disabled' : ''}>${'abcd'[k]} ${esc(o)}</button>`).join('')}</span>`;
   };
-  const fix = i => (checked && !same(answers[i], c.answers[i]) ? `<span class="fix${grade(answers[i], c.answers[i]) === 'typo' ? ' typo' : ''}">${grade(answers[i], c.answers[i]) === 'typo' ? 'опечатка → ' : '→ '}${esc(String(c.answers[i]).split(' | ').join(' / '))}</span>` : '');
+  // верно, но не как в ключе (второй вариант) - подсказываем, как в ключе
+  const fix = i => {
+    if (!checked) return '';
+    const key = String(c.answers[i]).split(' | '), g = grade(answers[i], c.answers[i]);
+    if (g === 'ok') return key.length > 1 && !same(answers[i], key[0]) ? `<span class="fix key">в ключе: ${esc(key[0])}</span>` : '';
+    return `<span class="fix${g === 'typo' ? ' typo' : ''}">${g === 'typo' ? 'опечатка → ' : '→ '}${esc(key[0])}</span>`;
+  };
 
   // «…из упражнения 2» - текст того упражнения (с ответами по ключу) рядом: справа на компьютере, сверху на телефоне
   let refHtml = '';

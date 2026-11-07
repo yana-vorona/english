@@ -524,3 +524,4 @@ body.wide #app { max-width: none; margin-right: 16px; }
 /* опечатка - жёлтым, засчитывается */
 .slot.typo .ch.sel, select.slot.typo, .slot.letter.typo, .typo.hwtext-slot { border-color: var(--warn); background: #fff6dd; color: var(--text); }
 .fix.typo { color: var(--warn); }
+.fix.key { color: var(--muted, #888); font-weight: 600; }
