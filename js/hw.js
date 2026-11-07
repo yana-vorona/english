@@ -63,6 +63,21 @@ function defaultDifficulty(c) {
 const DIFF = { green: '🟢', yellow: '🟡', red: '🔴' };
 const title = h => h.book === 'free' ? `✍️ ${h.title || 'Своё задание'}` : `${BOOK[h.book] || h.book} стр. ${h.page} упр. ${h.ex}`;
 const norm = s => String(s || '').toLowerCase().replace(/[’`]/g, "'").replace(/\s+/g, ' ').trim();
+// Ответ засчитываем без учёта сокращений: «she had heard» = «she'd heard», «would not» = «wouldn't»; «that» в начале и точка в конце не важны.
+const NEG = { 'will not': "won't", 'can not': "can't", 'cannot': "can't", 'shall not': "shan't" };
+const short = s => norm(s)
+  .replace(/[.!?]+$/, '').replace(/^that\s+/, '')
+  .replace(/\b(will not|can not|cannot|shall not)\b/g, m => NEG[m])
+  .replace(/\b(would|could|should|did|do|does|was|were|is|are|has|have|had|must|need) not\b/g, "$1n't")
+  .replace(/\b(i|you|he|she|it|we|they|there|that) (had|would)\b/g, "$1'd")
+  .replace(/\b(i) am\b/g, "$1'm")
+  .replace(/\b(you|we|they) are\b/g, "$1're")
+  .replace(/\b(i|you|we|they) have\b/g, "$1've")
+  .replace(/\b(he|she|it|there|that) (is|has)\b/g, "$1's")
+  .replace(/\b(i|you|he|she|it|we|they) will\b/g, "$1'll")
+  .replace(/\s+/g, ' ').trim();
+// «he had seen…», когда «he» уже стоит перед пропуском, тоже верно
+const same = (a, b) => short(a) === short(b) || short(norm(a).replace(/^(i|you|he|she|it|we|they) /, '')) === short(b);
 const fmtDate = d => d ? new Date(d + 'T00:00').toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', weekday: 'short' }) : '';
 
 
@@ -263,7 +278,7 @@ export async function hwRun(id) {
   // Виджет одного места выбора.
   const widget = i => {
     const s = slots[i], v = answers[i] ?? '';
-    const st = checked ? (norm(v) === norm(c.answers[i]) ? ' ok' : ' bad') : '';
+    const st = checked ? (same(v, c.answers[i]) ? ' ok' : ' bad') : '';
     if (s.kind === 'inline') {
       return `<span class="slot${st}" data-s="${i}">${s.opts.map(o =>
         `<button type="button" class="ch${norm(v) === norm(o) ? ' sel' : ''}" data-s="${i}" data-v="${esc(o)}"${checked ? ' disabled' : ''}>${esc(o)}</button>`).join('')}</span>`;
@@ -279,7 +294,22 @@ export async function hwRun(id) {
     return `<span class="slot${st}" data-s="${i}">${s.opts.map((o, k) =>
       `<button type="button" class="ch${norm(v) === norm(o) ? ' sel' : ''}" data-s="${i}" data-v="${esc(o)}"${checked ? ' disabled' : ''}>${'abcd'[k]} ${esc(o)}</button>`).join('')}</span>`;
   };
-  const fix = i => (checked && norm(answers[i]) !== norm(c.answers[i]) ? `<span class="fix">→ ${esc(c.answers[i])}</span>` : '');
+  const fix = i => (checked && !same(answers[i], c.answers[i]) ? `<span class="fix">→ ${esc(c.answers[i])}</span>` : '');
+
+  // «…из упражнения 2» - текст того упражнения (с ответами по ключу) рядом: справа на компьютере, сверху на телефоне
+  let refHtml = '';
+  const refN = String(c.ref || ((c.instruction || '').match(/упражнени\S*\s+(\d+)/i) || [])[1] || '');
+  if (refN && refN !== String(h.ex)) {
+    const sib = (await S.listHw()).find(x => x.book === h.book && String(x.page) === String(h.page) && String(x.ex) === refN && x.content);
+    if (sib) {
+      let k = 0;
+      const fill = t => esc(t).replace(/\{([^{}]*)\}/g, () => `<b>${esc(sib.content.answers?.[k++] ?? '…')}</b>`);
+      const body = sib.content.type === 'textab'
+        ? `<p>${esc(sib.content.text).replace(/\{(\d+)\}/g, (_, i) => `<b>${esc(sib.content.answers?.[+i - 1] ?? '…')}</b>`)}</p>`
+        : `<ol>${(sib.content.items || []).map(it => `<li>${fill(it.text)}</li>`).join('')}</ol>`;
+      refHtml = `<details class="hwref" open><summary>📖 Упражнение ${esc(refN)}</summary>${body}</details>`;
+    }
+  }
 
   const render = () => {
     let n = 0;
@@ -287,7 +317,7 @@ export async function hwRun(id) {
     const textBlock = c.type === 'textab'
       ? `<div class="flash hwtext">${esc(c.text).replace(/\{(\d+)\}/g, (_, k) => {
           const i = +k - 1, v = answers[i];
-          const st = checked ? (norm(v) === norm(c.answers[i]) ? 'good' : 'wrong') : (v ? 'filled' : '');
+          const st = checked ? (same(v, c.answers[i]) ? 'good' : 'wrong') : (v ? 'filled' : '');
           return `<span class="gap ${st}">${v ? esc(v) : `___${k}`}</span>`;
         })}</div>
         <div class="ablines">${(c.choices || []).map((_, i) => `<div class="abline"><b>${i + 1}:</b> ${widget(i)} ${fix(i)}</div>`).join('')}</div>`
@@ -303,6 +333,7 @@ export async function hwRun(id) {
       <p class="muted">⏱ ~${mins} мин · ${DIFF[diff]} · ${esc(formatOf(c))}${h.lesson ? ` · к уроку ${esc(fmtDate(h.lesson))}` : ''}</p>
       ${manualDone ? '<p class="card">✅ Отмечено, что сделала (в тетради). Можно посмотреть или пройти здесь с проверкой.</p>' : ''}
       ${c.instruction ? `<p class="instr">${esc(c.instruction)}</p>` : ''}
+      ${refHtml}
       ${c.img ? `<img class="hwimg" src="${esc(c.img)}" alt="страница тетради">` : ''}
       ${textBlock}
       ${items ? `<ol class="hwitems">${items}</ol>` : ''}
@@ -375,7 +406,7 @@ export async function hwRun(id) {
     }
     let right = 0;
     for (let i = 0; i < slots.length; i++) {
-      const ok = norm(answers[i]) === norm(c.answers[i]);
+      const ok = same(answers[i], c.answers[i]);
       if (ok) right++;
       else if (slots[i].opts) {
         const it = c.items?.[slots[i].item];

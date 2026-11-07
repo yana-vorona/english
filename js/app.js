@@ -693,8 +693,14 @@ const routes = [
   [/^#\/hw\/([^/]+)$/, hwRun],
 ];
 
+// Вернулась из упражнения в список - остаёмся там, где была (а не наверху)
+const scrollPos = {};
+let lastHash = location.hash || '#/';
 async function router() {
   const h = location.hash || '#/';
+  const from = lastHash;
+  scrollPos[from] = window.scrollY;
+  lastHash = h;
   for (const [re, fn] of routes) {
     const m = h.match(re);
     if (m) {
@@ -702,7 +708,7 @@ async function router() {
       document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === section));
       document.body.classList.toggle('wide', h === '#/fix');
       await fn(...m.slice(1));
-      window.scrollTo(0, 0);
+      window.scrollTo(0, h.length > 2 && from.startsWith(h + '/') ? scrollPos[h] || 0 : 0);
       return;
     }
   }
