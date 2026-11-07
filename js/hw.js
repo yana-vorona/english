@@ -315,7 +315,12 @@ export async function hwRun(id) {
     if (!checked) return '';
     const key = String(c.answers[i]).split(' | '), g = grade(answers[i], c.answers[i]);
     if (g === 'ok') return key.length > 1 && !same(answers[i], key[0]) ? `<span class="fix key">в ключе: ${esc(key[0])}</span>` : '';
-    return `<span class="fix${g === 'typo' ? ' typo' : ''}">${g === 'typo' ? 'опечатка → ' : '→ '}${esc(key[0])}</span>`;
+    // выделяем, какие слова не совпали: в ответе ключа - чего не хватает, «у тебя» - что лишнее/неверное
+    const mine = short(answers[i]).split(' ').filter(Boolean), keyw = short(key[0]).split(' ').filter(Boolean);
+    const hl = key[0].split(/(\s+)/).map(t => { const w = short(t); return w && !mine.includes(w) ? `<mark>${esc(t)}</mark>` : esc(t); }).join('');
+    const extra = mine.filter(w => !keyw.includes(w));
+    const yours = g === 'bad' && extra.length && extra.length <= 4 ? ` <span class="yours">у тебя: ${extra.map(w => `<s>${esc(w)}</s>`).join(' ')}</span>` : '';
+    return `<span class="fix${g === 'typo' ? ' typo' : ''}">${g === 'typo' ? 'опечатка → ' : '→ '}${hl}</span>${yours}`;
   };
 
   // «…из упражнения 2» - текст того упражнения (с ответами по ключу) рядом: справа на компьютере, сверху на телефоне

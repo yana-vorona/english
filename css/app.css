@@ -525,3 +525,5 @@ body.wide #app { max-width: none; margin-right: 16px; }
 .slot.typo .ch.sel, select.slot.typo, .slot.letter.typo, .typo.hwtext-slot { border-color: var(--warn); background: #fff6dd; color: var(--text); }
 .fix.typo { color: var(--warn); }
 .fix.key { color: var(--muted, #888); font-weight: 600; }
+.fix mark { background: #c9f0d6; color: inherit; border-radius: 4px; padding: 0 3px; text-decoration: underline; }
+.yours { color: var(--bad); font-size: .9em; margin-left: 6px; } .yours s { text-decoration-thickness: 2px; }
