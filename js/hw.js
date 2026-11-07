@@ -350,8 +350,6 @@ export async function hwRun(id) {
       ${checked || manualDone ? '' : '<button class="btn ghost wide" id="manual">✓ Уже сделала (в тетради)</button>'}
       ${checked ? '<button class="btn ghost wide" id="redo">🔄 Пройти заново</button>' : ''}`;
     bind();
-    const stk = document.getElementById('stickers')?.getBoundingClientRect();  // список - под стикером «Фиксить»
-    document.documentElement.style.setProperty('--side-top', `${stk && stk.height ? stk.bottom + 12 : 12}px`);
   };
 
   const afterCheck = () => `
