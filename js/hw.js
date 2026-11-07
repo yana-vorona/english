@@ -311,6 +311,12 @@ export async function hwRun(id) {
     }
   }
 
+  // слева - несделанные упражнения, чтобы переходить без «назад» (только на широком экране)
+  const rest = (await S.listHw()).filter(x => x.status !== 'done' || x.id === h.id)
+    .sort((a, b) => (a.lesson || '').localeCompare(b.lesson || '') || a.createdAt - b.createdAt);
+  const sideHtml = rest.length > 1 ? `<nav class="hwside"><div class="hwside-h">📝 Не сделано</div>${rest.map(x =>
+    `<a href="#/hw/${x.id}" class="${x.id === h.id ? 'on' : ''}">${esc(title(x))}${x.lesson ? `<small>к ${esc(fmtDate(x.lesson))}</small>` : ''}</a>`).join('')}</nav>` : '';
+
   const render = () => {
     let n = 0;
     const abCount = c.type === 'textab' ? (c.choices || []).length : 0;
@@ -334,6 +340,7 @@ export async function hwRun(id) {
       ${manualDone ? '<p class="card">✅ Отмечено, что сделала (в тетради). Можно посмотреть или пройти здесь с проверкой.</p>' : ''}
       ${c.instruction ? `<p class="instr">${esc(c.instruction)}</p>` : ''}
       ${refHtml}
+      ${sideHtml}
       ${c.img ? `<img class="hwimg" src="${esc(c.img)}" alt="страница тетради">` : ''}
       ${textBlock}
       ${items ? `<ol class="hwitems">${items}</ol>` : ''}
@@ -343,6 +350,8 @@ export async function hwRun(id) {
       ${checked || manualDone ? '' : '<button class="btn ghost wide" id="manual">✓ Уже сделала (в тетради)</button>'}
       ${checked ? '<button class="btn ghost wide" id="redo">🔄 Пройти заново</button>' : ''}`;
     bind();
+    const stk = document.getElementById('stickers')?.getBoundingClientRect();  // список - под стикером «Фиксить»
+    document.documentElement.style.setProperty('--side-top', `${stk && stk.height ? stk.bottom + 12 : 12}px`);
   };
 
   const afterCheck = () => `

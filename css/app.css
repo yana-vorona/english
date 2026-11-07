@@ -506,3 +506,14 @@ body.wide #app { max-width: none; margin-right: 16px; }
 @media (min-width: 1150px) {
   .hwref { position: fixed; top: 80px; left: calc(50% + 340px); width: min(440px, calc(50% - 370px)); max-height: calc(100vh - 160px); overflow: auto; margin: 0; }
 }
+
+.hwside { display: none; }
+@media (min-width: 1150px) {
+  .hwside { display: block; position: fixed; left: 12px; top: var(--side-top, 270px); width: min(260px, calc(50% - 360px)); max-height: calc(100vh - var(--side-top, 270px) - 110px); overflow: auto;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+  .hwside-h { font-weight: 600; padding: 4px 8px 6px; }
+  .hwside a { display: block; padding: 6px 8px; border-radius: 8px; }
+  .hwside a:hover { background: var(--line); }
+  .hwside a.on { background: var(--accent, #6c5ce7); color: #fff; }
+  .hwside small { display: block; opacity: .7; font-size: .8em; }
+}
