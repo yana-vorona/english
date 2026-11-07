@@ -193,7 +193,7 @@ export async function hwList() {
       <div class="deck-head"><span class="deck-name">${esc(title(h))}</span>
         <span>${c ? `⏱ ~${mins(h)} мин ${DIFF[diff] || ''}` : (h.book === 'free' ? '✍️' : '⏳')}</span></div>
       <div class="deck-meta">${h.lesson ? `к уроку ${esc(fmtDate(h.lesson))} · ` : ''}${c ? esc(formatOf(c)) : (h.book === 'free' ? (h.tutor?.answer ? '🦊 Claude ответил' : 'своё задание: разбор с Claude') : 'жду содержимого — разложу упражнение по кнопкам')}</div>
-      ${h.status === 'done' ? `<div class="deck-meta">✅ ${h.result ? `${h.result.right} из ${h.result.total}` : 'сделано'}</div>` : ''}
+      ${h.status === 'done' ? `<div class="deck-meta">✅ ${h.doneAt ? new Date(h.doneAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + ' · ' : ''}${h.result ? `${h.result.right} из ${h.result.total}` : 'сделано'}</div>` : ''}
     </a>`;
   };
 
