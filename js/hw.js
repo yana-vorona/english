@@ -201,7 +201,7 @@ export async function hwList() {
   const factor = await S.getMeta('hwFactor', 1);
   const all = await S.listHw();
   const todo = all.filter(h => h.status !== 'done').sort((a, b) => (a.lesson || '').localeCompare(b.lesson || '') || a.createdAt - b.createdAt);
-  const done = all.filter(h => h.status === 'done').sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0)).slice(0, 10);
+  const done = all.filter(h => h.status === 'done').sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0)); // все сделанные, не только 10 последних (Яна 08.11: «в сделанных не вижу стр 89»)
   const mins = h => h.minutes || (h.content ? estimate(h.content, factor) : 0);
   const total = todo.reduce((a, h) => a + mins(h), 0);
 
