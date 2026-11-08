@@ -343,9 +343,9 @@ export const REVIEW_GAMES = [
 ];
 const reviewGame = () => { const g = load('reviewGame', 'choice'); return REVIEW_GAMES.some(x => x[0] === g) ? g : 'choice'; };
 
-// В «Парах» большой выбор («все 57») — пачками по 20-30, поровну, без хвостика в 1-2 слова: 57 → 29+28.
+// В «Парах» — пачками по 10 (Яна 08.11: «по 20 неудобно»), поровну, без хвостика: 25 → 9+8+8.
 // В остальных играх слова идут по одному — делить не нужно.
-const packOf = n => n > 30 ? Math.ceil(n / Math.ceil(n / 30)) : n;
+const packOf = n => n > 10 ? Math.ceil(n / Math.ceil(n / 10)) : n;
 
 // seen — слова, уже пройденные в прошлых пачках этого захода (чтобы ручной повтор и микс не повторяли их)
 export async function reviewView(scope, n, seen = new Set()) {
