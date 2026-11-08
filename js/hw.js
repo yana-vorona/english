@@ -368,7 +368,8 @@ export async function hwRun(id) {
       ${c.instruction ? `<p class="instr">${esc(c.instruction)}</p>` : ''}
       ${refHtml}
       ${sideHtml}
-      ${c.img ? `<img class="hwimg" src="${esc(c.img)}" alt="страница тетради">` : ''}
+      ${c.img ? (refHtml ? `<img class="hwimg" src="${esc(c.img)}" alt="страница тетради">`
+        : `<details class="hwref" open><summary>📖 Из книги</summary><img class="hwimg" src="${esc(c.img)}" alt="страница тетради"></details>`) : ''}
       ${textBlock}
       ${items ? `<ol class="hwitems">${items}</ol>` : ''}
       <p class="warn" id="left"></p>
