@@ -67,6 +67,9 @@ const norm = s => String(s || '').toLowerCase().replace(/[’`]/g, "'").replace(
 const NEG = { 'will not': "won't", 'can not': "can't", 'cannot': "can't", 'shall not': "shan't" };
 const short = s => norm(s)
   .replace(/[.,!?;:"“”«»]/g, ' ').replace(/^\s*that\s+/, '')  // запятые и прочие знаки не важны
+  // прямая речь: «"…" she said» / «He said, "…"» - слова автора не ошибка, сравниваем только саму речь
+  .replace(/\s+(?:i|you|he|she|it|we|they|the \w+|[a-z]+)\s+(?:said|says|asked|asks|replied|answered|told (?:me|him|her|us|them))\s*$/, '')
+  .replace(/^\s*(?:i|you|he|she|it|we|they|the \w+|[a-z]+)\s+(?:said|says|asked|asks|replied|answered|told (?:me|him|her|us|them))\s+/, '')
   .replace(/\b(will not|can not|cannot|shall not)\b/g, m => NEG[m])
   .replace(/\b(would|could|should|did|do|does|was|were|is|are|has|have|had|must|need) not\b/g, "$1n't")
   .replace(/\b(i|you|he|she|it|we|they|there|that) (had|would)\b/g, "$1'd")
