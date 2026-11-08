@@ -303,7 +303,10 @@ export async function hwRun(id) {
         `<button type="button" class="ch${norm(v) === norm(o) ? ' sel' : ''}" data-s="${i}" data-v="${esc(o)}"${checked ? ' disabled' : ''}>${esc(o)}</button>`).join('')}</span>`;
     }
     if (s.kind === 'list') {
-      return `<select class="slot${st}" data-s="${i}"${checked ? ' disabled' : ''}><option value="">…</option>${(c.words || []).map(w =>
+      // уже выбранное в других пропусках из списка убираем (слово, которое в рамке дважды, - после второго раза)
+      const left = (c.words || []).slice();
+      slots.forEach((o, j) => { if (j !== i && o.kind === 'list' && answers[j] && norm(answers[j]) !== norm(v)) { const k = left.findIndex(w => norm(w) === norm(answers[j])); if (k >= 0) left.splice(k, 1); } });
+      return `<select class="slot${st}" data-s="${i}"${checked ? ' disabled' : ''}><option value="">…</option>${[...new Set(left)].map(w =>
         `<option${norm(v) === norm(w) ? ' selected' : ''}>${esc(w)}</option>`).join('')}<option value="не знаю"${v === 'не знаю' ? ' selected' : ''}>🤷 не знаю</option></select>`;
     }
     if (s.kind === 'letter' || s.kind === 'write') {
@@ -408,9 +411,9 @@ export async function hwRun(id) {
         await saveAnswer(+b.dataset.s, b.dataset.v);
         render();
       });
-      $app.querySelectorAll('select.slot').forEach(sel => sel.onchange = () => {
-        saveAnswer(+sel.dataset.s, sel.value);
-        sel.classList.remove('missing');
+      $app.querySelectorAll('select.slot').forEach(sel => sel.onchange = async () => {
+        await saveAnswer(+sel.dataset.s, sel.value);
+        const y = scrollY; render(); scrollTo(0, y);  // перерисовать списки - выбранное слово уходит из остальных
       });
       $app.querySelectorAll('.letter input').forEach(inp => inp.oninput = () => {
         const i = +inp.dataset.s;
