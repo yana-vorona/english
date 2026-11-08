@@ -241,8 +241,8 @@ a.btn.wide { display: flex; }
 .slot.bad .ch.sel, select.slot.bad, .slot.letter.bad { border-color: var(--bad); background: var(--bad-soft); color: var(--text); }
 select.slot { width: auto; min-height: 36px; padding: 2px 8px; font-size: 16px; border: 2px solid var(--line); }
 select.slot.missing { border-color: var(--bad); }
-.slot.letter { align-items: center; border: 2px solid var(--line); padding: 0 6px; }
-.slot.letter input { min-height: 32px; border: 0; padding: 0 2px; background: transparent; field-sizing: content; min-width: 7em; max-width: calc(100vw - 80px); } /* поле растёт по ответу */
+.slot.letter { align-items: center; border: 2px solid var(--line); padding: 0 6px; flex-wrap: nowrap; gap: 0; } /* первая буква и поле - одной строкой: «b|urglary» */
+.slot.letter input { min-height: 32px; border: 0; padding: 0 2px; background: transparent; field-sizing: content; min-width: 7em; width: auto; flex: 0 1 auto; margin: 0; box-shadow: none; max-width: calc(100vw - 80px); } /* поле растёт по ответу */
 .fix { color: var(--ok); font-weight: 700; margin-left: 4px; }
 .hwtext { text-align: left; font-size: 17px; line-height: 1.8; }
 .gap.filled { color: var(--accent); }
