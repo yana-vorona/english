@@ -6,7 +6,7 @@ import * as S from './store.js';
 import * as db from './db.js';
 
 const DAY = 86400000;
-const FIRST_WEEK = new Date(2026, 9, 19).getTime();   // пн 19.10 — с этой недели питомец растёт
+const FIRST_WEEK = new Date(2026, 10, 9, 16, 57).getTime();   // отсчёт бонусов: новый питомец-трицератопс растёт с первого облика (Яна 09.11, раньше - с 19.10)
 const FORMS = 7;
 const HW_PTS = 5, READ_N = 2, READ_PTS = 2, WORDS_N = 30, WORDS_PTS = 2;
 // Сколько всего бонусов нужно для облика 2, 3, … 7. Шаги растут понемногу: первые облики быстрее.
