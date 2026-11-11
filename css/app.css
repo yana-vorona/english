@@ -527,3 +527,8 @@ body.wide #app { max-width: none; margin-right: 16px; }
 .fix.key { color: var(--muted, #888); font-weight: 600; }
 .fix mark { background: #c9f0d6; color: inherit; border-radius: 4px; padding: 0 3px; text-decoration: underline; }
 .yours { color: var(--bad); font-size: .9em; margin-left: 6px; } .yours s { text-decoration-thickness: 2px; }
+/* текст для чтения справа; вопросы с вариантами a–d - столбиком */
+.srctext p { margin: 6px 0 10px; line-height: 1.55; }
+@media (min-width: 1150px) { .hwref.inl { position: static; width: auto; max-height: none; margin: 8px 0 12px; } }
+.slot.vert { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 6px 0 4px; }
+.slot.vert .ch { text-align: left; line-height: 1.35; padding: 6px 12px; }

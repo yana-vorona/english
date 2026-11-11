@@ -299,8 +299,10 @@ export async function hwRun(id) {
     const s = slots[i], v = answers[i] ?? '';
     const st = checked ? ' ' + grade(v, c.answers[i]) : '';
     if (s.kind === 'inline') {
-      return `<span class="slot${st}" data-s="${i}">${s.opts.map(o =>
-        `<button type="button" class="ch${norm(v) === norm(o) ? ' sel' : ''}" data-s="${i}" data-v="${esc(o)}"${checked ? ' disabled' : ''}>${esc(o)}</button>`).join('')}</span>`;
+      // длинные варианты (вопрос с a–d) - столбиком с буквами, как в книге
+      const vert = s.opts.some(o => o.length > 20);
+      return `<span class="slot${vert ? ' vert' : ''}${st}" data-s="${i}">${s.opts.map((o, k) =>
+        `<button type="button" class="ch${norm(v) === norm(o) ? ' sel' : ''}" data-s="${i}" data-v="${esc(o)}"${checked ? ' disabled' : ''}>${vert ? `<b>${'abcdef'[k]}</b> ` : ''}${esc(o)}</button>`).join('')}</span>`;
     }
     if (s.kind === 'list') {
       // уже выбранное в других пропусках из списка убираем (слово, которое в рамке дважды, - после второго раза)
@@ -344,6 +346,10 @@ export async function hwRun(id) {
     }
   }
 
+  // текст для чтения (статья, рассказ, диалог), на который опирается упражнение, - справа, обычным текстом
+  const srcHtml = c.srcText ? `<details class="hwref" open><summary>📖 ${esc(c.srcTitle || 'Текст')}</summary><div class="srctext">${
+    String(c.srcText).split(/\n\s*\n/).map(p => `<p>${esc(p.trim())}</p>`).join('')}</div></details>` : '';
+
   // слева - несделанные упражнения, чтобы переходить без «назад» (только на широком экране)
   const rest = (await S.listHw()).filter(x => x.status !== 'done' || x.id === h.id)
     .sort((a, b) => (a.lesson || '').localeCompare(b.lesson || '') || a.createdAt - b.createdAt);
@@ -372,9 +378,10 @@ export async function hwRun(id) {
       <p class="muted">⏱ ~${mins} мин · ${DIFF[diff]} · ${esc(formatOf(c))}${h.lesson ? ` · к уроку ${esc(fmtDate(h.lesson))}` : ''}</p>
       ${manualDone ? '<p class="card">✅ Отмечено, что сделала (в тетради). Можно посмотреть или пройти здесь с проверкой.</p>' : ''}
       ${c.instruction ? `<p class="instr">${esc(c.instruction)}</p>` : ''}
-      ${refHtml}
+      ${srcHtml || refHtml}
+      ${srcHtml && refHtml ? refHtml.replace('class="hwref"', 'class="hwref inl"') : ''}
       ${sideHtml}
-      ${c.img ? (refHtml ? `<img class="hwimg" src="${esc(c.img)}" alt="страница тетради">`
+      ${c.img ? (srcHtml || refHtml ? `<img class="hwimg" src="${esc(c.img)}" alt="страница тетради">`
         : `<details class="hwref" open><summary>📖 Из книги</summary><img class="hwimg" src="${esc(c.img)}" alt="страница тетради"></details>`) : ''}
       ${textBlock}
       ${items ? `<ol class="hwitems">${items}</ol>` : ''}
