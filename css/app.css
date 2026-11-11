@@ -532,3 +532,13 @@ body.wide #app { max-width: none; margin-right: 16px; }
 @media (min-width: 1150px) { .hwref.inl { position: static; width: auto; max-height: none; margin: 8px 0 12px; } }
 .slot.vert { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 6px 0 4px; }
 .slot.vert .ch { text-align: left; line-height: 1.35; padding: 6px 12px; }
+/* на ПК меню - узкой колонкой слева, а не полосой внизу (Яна 11.11: «занимают внизу кучу места») */
+@media (min-width: 1001px) {
+  .nav { top: 0; bottom: 0; right: auto; width: 84px; grid-template-columns: 1fr !important; grid-auto-rows: min-content; align-content: start;
+    gap: 4px; border-top: 0; border-right: 1px solid var(--line); padding: 12px 0; z-index: 16; }
+  .nav a { padding: 8px 0; }
+  #stickers { left: 84px; bottom: 0; }
+  .hubbar { left: 324px; bottom: 10px; }
+  #app { margin-left: max(340px, calc(50% - 320px)); padding-bottom: 60px; }
+}
+@media (min-width: 1150px) { .hwside { left: 96px; } }
