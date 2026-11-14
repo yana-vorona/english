@@ -70,14 +70,29 @@ export function say(text) {
   if (canSpeak) speechSynthesis.cancel();
   if (player) { player.pause(); player = null; }
   if (navigator.onLine !== false) {
-    const a = player = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&tl=en-GB&client=tw-ob&q=' + encodeURIComponent(String(text).slice(0, 180)));
-    const fail = () => { if (player === a && id === sayId) { player = null; synthSay(text, id); } };
+    const key = String(text).slice(0, 180);
+    let a = audioCache.get(key);
+    if (a) { audioCache.delete(key); a.currentTime = 0; }
+    else a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&tl=en-GB&client=tw-ob&q=' + encodeURIComponent(key));
+    player = a;
+    let started = false;
+    const fail = () => {
+      audioCache.delete(key);
+      if (player === a && id === sayId) { player = null; a.pause(); synthSay(text, id); }
+    };
+    a.onplaying = () => { started = true; };
     a.onerror = fail;
     a.play().catch(fail);
+    // запись иногда «подвисает» (медленный интернет) и молчит без ошибки — не заиграла за 2 с, говорим голосом телефона
+    setTimeout(() => { if (!started) fail(); }, 2000);
+    // уже скачанные записи держим — повтор того же слова звучит сразу
+    audioCache.set(key, a);
+    if (audioCache.size > 40) audioCache.delete(audioCache.keys().next().value);
     return;
   }
   synthSay(text, id);
 }
+const audioCache = new Map();
 function synthSay(text, id) {
   if (!canSpeak) return;
   // Chrome глотает фразу, сказанную сразу после cancel(), и иногда «засыпает» на паузе — отсюда задержка и resume().
