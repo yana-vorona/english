@@ -4,6 +4,7 @@
 // карта сгорает. Особые карты 🔄/🛡 — см. KINDS. Настоящая дуэль — в воскресенье, с недели 19.10.
 import * as S from './store.js';
 import { esc, toast, load, save } from './ui.js';
+import { say } from './study.js';
 import { weekLessons } from './lessons.js';
 
 const $app = document.getElementById('app');
@@ -65,13 +66,7 @@ export async function duelCard() {
 
 // Озвучка слова (тот же выключатель 🔇, что в занятиях).
 const muted = () => load('mute', false);
-function speak(text) {
-  if (muted() || !('speechSynthesis' in window)) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'en-GB';
-  speechSynthesis.cancel();
-  speechSynthesis.speak(u);
-}
+const speak = text => say(text);
 
 // Особые карты: 🔄 — наоборот (видишь русское, ищешь английское), сила ×3; 🛡 — щит: верно — карта Бруно сгорает.
 const KINDS = { flip: { icon: '🔄', hint: 'Наоборот: найди английское слово. Верно — сила ×3!' },

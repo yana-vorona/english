@@ -61,9 +61,25 @@ function speakNow(text, withVoice, id = sayId) {
     setTimeout(() => speakNow(text, false, id), 80);
   }, 1500);
 }
-function say(text) {
-  if (muted() || !canSpeak) return;
+// 15.11: на ПК Яны в Windows нет английского голоса (только Ирина/Павел), облачный голос Chrome молчит —
+// поэтому сначала живая запись произношения (Google), без интернета/при ошибке — голос браузера.
+let player = null;
+export function say(text) {
+  if (muted()) return;
   const id = ++sayId;
+  if (canSpeak) speechSynthesis.cancel();
+  if (player) { player.pause(); player = null; }
+  if (navigator.onLine !== false) {
+    const a = player = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&tl=en-GB&client=tw-ob&q=' + encodeURIComponent(String(text).slice(0, 180)));
+    const fail = () => { if (player === a && id === sayId) { player = null; synthSay(text, id); } };
+    a.onerror = fail;
+    a.play().catch(fail);
+    return;
+  }
+  synthSay(text, id);
+}
+function synthSay(text, id) {
+  if (!canSpeak) return;
   // Chrome глотает фразу, сказанную сразу после cancel(), и иногда «засыпает» на паузе — отсюда задержка и resume().
   const busy = speechSynthesis.speaking || speechSynthesis.pending;
   if (busy) speechSynthesis.cancel();
@@ -112,7 +128,7 @@ function frame(back, title, part, extra = '') {
     <div id="ex"></div>`;
   $app.querySelector('#mute').onclick = e => {
     save('mute', !muted());
-    if (muted()) speechSynthesis?.cancel();
+    if (muted()) { speechSynthesis?.cancel(); player?.pause(); }
     e.currentTarget.textContent = muted() ? '🔇' : '🔊';
   };
   const ex = $app.querySelector('#ex');
