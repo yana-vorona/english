@@ -346,12 +346,15 @@ export async function learnView(deckId) {
     return;
   }
 
+  const rest = fresh.filter(c => !batch.includes(c)).length;
   for (; mode < MODES.length; mode++) {
     save(key, { ids: batch.map(c => c.id), mode });
     const [kind, title] = MODES[mode];
     if (kind === 'type' && load('skipType', false)) continue;          // «без написания»
     const skip = kind === 'type' ? '<button class="btn ghost mini" id="skipType">⏭ Пропустить</button>' : '';
     const ex = frame(back, title, mode / MODES.length, `${skip}<span class="muted">${mode + 1}/${MODES.length}</span>`);
+    // Сколько новых ещё ждёт в теме (Яна 14.11: «чтобы было видно, сколько новых ещё осталось»)
+    $app.querySelector('h2.mode').insertAdjacentHTML('afterend', `<p class="muted center">Сейчас учишь ${batch.length} · ${rest ? `после них ещё новых: ${rest}` : 'это последние новые в теме 🎯'}</p>`);
     const run = RUN[kind](ex, batch, pool);
     if (kind === 'type') await Promise.race([run, new Promise(r => { $app.querySelector('#skipType').onclick = r; })]);
     else await run;
@@ -365,6 +368,7 @@ export async function learnView(deckId) {
       <p class="big-num">+${batch.length}</p>
       <p>${plural(batch.length, 'новое слово', 'новых слова', 'новых слов')} в коробке 1. Повторим завтра 😉</p>
       <ul class="done-list">${batch.map(c => `<li><b>${esc(c.en)}</b> — ${esc(c.ru)}</li>`).join('')}</ul>
+      <p class="muted">${more ? `В теме ещё новых: ${more}` : 'Новых в теме больше нет — все изучены 🎉'}</p>
     </div>
     ${more ? `<a class="btn primary wide" href="#" id="again">Ещё ${portionOf(more)} ${plural(portionOf(more), 'слово', 'слова', 'слов')}</a>` : ''}
     <a class="btn wide" href="${back}">Хватит на сегодня</a>
