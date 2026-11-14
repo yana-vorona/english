@@ -513,10 +513,12 @@ export async function reviewView(scope, n, seen = new Set()) {
 
   const finish = async () => {
     portion.forEach(c => seen.add(c.id));
-    // остаток выбранного числа — следующей пачкой; выбранное кончилось — как раньше, новая порция
+    // остаток выбранного числа — следующей пачкой; выбранное кончилось — новая порция.
+    // Пройденные слова (seen) не повторяются до конца захода — иначе в миксе и ручном повторе
+    // слова шли по кругу без конца (Яна 14.11: «повторяются и не заканчиваются»).
     const avail = (mix ? await mixPool() : await S.dueCards(deckId)).filter(c => !seen.has(c.id)).length;
     const rest = Math.min(N - total, avail);
-    const left = rest > 0 ? rest : mix ? N : (await S.dueCards(deckId)).length;
+    const left = rest > 0 ? rest : avail;
     const nextN = rest > 0 ? rest : N;
     frame(back, '🎉 Порция готова!', 1).innerHTML = `
       <div class="done-box">
@@ -524,9 +526,9 @@ export async function reviewView(scope, n, seen = new Set()) {
         <p>Повторено ${words(total)}.${bad && mix ? ' Трудные слова — ниже, глянь на них ещё разок.' : bad ? ' Ошибки вернулись в коробку 1 — завтра встретимся с ними снова.' : ' Без единой ошибки 🔥'}</p>
         ${wrong.length ? `<p class="muted">Трудные:</p><ul class="done-list">${wrong.map(c => `<li><b>${esc(c.en)}</b> — ${esc(c.ru)}</li>`).join('')}</ul>` : ''}
       </div>
-      ${left ? `<a class="btn primary wide" href="#" id="again">Ещё ${pack(Math.min(nextN, left))} ${plural(pack(Math.min(nextN, left)), 'слово', 'слова', 'слов')}</a>` : '<p class="center">На сегодня всё повторено 💪</p>'}
+      ${left ? `<a class="btn primary wide" href="#" id="again">Ещё ${pack(Math.min(nextN, left))} ${plural(pack(Math.min(nextN, left)), 'слово', 'слова', 'слов')}</a>` : `<p class="center">${mix ? 'Все слова пройдены 💪' : 'На сегодня всё повторено 💪'}</p>`}
       <a class="btn wide" href="${back}">Хватит на сегодня</a>`;
-    $app.querySelector('#again')?.addEventListener('click', e => { e.preventDefault(); rest > 0 ? reviewView(scope, rest, seen) : reviewView(scope, N); });
+    $app.querySelector('#again')?.addEventListener('click', e => { e.preventDefault(); reviewView(scope, rest > 0 ? rest : N, seen); });
   };
 
   if (game === 'choice') return nextCard();
