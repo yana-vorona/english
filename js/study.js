@@ -22,29 +22,54 @@ const canSpeak = 'speechSynthesis' in window;
 // первым касанием в приложении говорим беззвучную фразу — дальше слова звучат сами.
 if (canSpeak) {
   const unlock = () => {
-    const u = new SpeechSynthesisUtterance(' ');
+    // настоящее слово (не пробел — пустая фраза у некоторых телефонов «зависает» в очереди и глушит всё следующее)
+    const u = new SpeechSynthesisUtterance('a');
     u.volume = 0;
     speechSynthesis.speak(u);
   };
   addEventListener('pointerdown', unlock, { once: true, capture: true });
   addEventListener('keydown', unlock, { once: true, capture: true });
+  // голоса подгружаются не сразу — подхватываем, когда появятся
+  speechSynthesis.getVoices();
+  speechSynthesis.addEventListener?.('voiceschanged', () => speechSynthesis.getVoices());
 }
+// Голос из телефона, а не «облачный» (облачный молчит без интернета и часто сбоит).
 const enVoice = () => {
-  const vs = speechSynthesis.getVoices();
-  return vs.find(v => /^en[-_]GB/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang));
+  const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+  const pick = list => list.find(v => /^en[-_]GB/i.test(v.lang)) || list[0];
+  return pick(vs.filter(v => v.localService)) || pick(vs);
 };
-function say(text) {
-  if (muted() || !canSpeak) return;
+// живые фразы держим, иначе Chrome может «потерять» их посреди озвучки
+const live = new Set();
+let sayId = 0;
+function speakNow(text, withVoice, id = sayId) {
+  if (id !== sayId) return;
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'en-GB';
-  const v = enVoice();
+  const v = withVoice && enVoice();
   if (v) u.voice = v;
+  live.add(u);
+  let started = false;
+  u.onstart = () => { started = true; };
+  u.onend = u.onerror = () => live.delete(u);
+  speechSynthesis.speak(u);
+  // не заговорил за 1,5 с — пробуем ещё раз голосом по умолчанию
+  if (withVoice) setTimeout(() => {
+    if (started || muted() || id !== sayId) return;
+    live.delete(u);
+    speechSynthesis.cancel();
+    setTimeout(() => speakNow(text, false, id), 80);
+  }, 1500);
+}
+function say(text) {
+  if (muted() || !canSpeak) return;
+  const id = ++sayId;
   // Chrome глотает фразу, сказанную сразу после cancel(), и иногда «засыпает» на паузе — отсюда задержка и resume().
   const busy = speechSynthesis.speaking || speechSynthesis.pending;
   if (busy) speechSynthesis.cancel();
-  speechSynthesis.resume();
-  if (busy) setTimeout(() => speechSynthesis.speak(u), 80);
-  else speechSynthesis.speak(u);
+  if (speechSynthesis.paused) speechSynthesis.resume();
+  if (busy) setTimeout(() => speakNow(text, true, id), 80);
+  else speakNow(text, true, id);
 }
 
 const sayBtn = en => `<button type="button" class="icon say" data-say="${esc(en)}" aria-label="Произнести">🔊</button>`;
