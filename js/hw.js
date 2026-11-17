@@ -94,6 +94,32 @@ const typo = (a, b) => String(b ?? '').split(' | ').some(b1 => {
 });
 // ok - верно, typo - опечатка (засчитываем, но показываем), bad - ошибка
 const grade = (a, b) => same(a, b) ? 'ok' : typo(a, b) ? 'typo' : 'bad';
+// 17.11 (96.3): «wood, paper and cardboard» — перечисление, порядок не важен. Места одного пункта, между которыми только
+// «,» / «and» / «or», — одна группа: ответ засчитываем, если он есть среди ключей группы (каждый ключ — один раз).
+function keyFor(c, answers) {
+  const key = (c.answers || []).slice();
+  let k = c.type === 'textab' ? (c.choices || []).length : 0;
+  for (const it of c.items || []) {
+    const ms = [...it.text.matchAll(RE)].filter(m => m[1] === '#' || m[1].startsWith('=') || m[1].includes('|'));
+    let group = [];
+    const flush = () => {
+      if (group.length > 1) {
+        const pool = group.map(i => key[i]), out = {};
+        group.forEach(i => { const j = pool.findIndex(x => x != null && grade(answers[i], x) !== 'bad'); if (j >= 0) { out[i] = pool[j]; pool[j] = null; } });
+        const rest = pool.filter(x => x != null);
+        group.forEach(i => { if (!(i in out)) out[i] = rest.shift(); key[i] = out[i]; });
+      }
+      group = [];
+    };
+    ms.forEach((m, n) => {
+      const between = n ? it.text.slice(ms[n - 1].index + ms[n - 1][0].length, m.index) : null;
+      if (n && !/^\s*(?:,|,?\s*and|,?\s*or)\s*$/i.test(between)) flush();
+      group.push(k++);
+    });
+    flush();
+  }
+  return key;
+}
 // в ключе можно несколько верных вариантов через « | »
 const same = (a, b) => String(b ?? '').split(' | ').some(b1 =>
   short(a) === short(b1) || short(norm(a).replace(/^(i|you|he|she|it|we|they) /, '')) === short(b1));
@@ -297,7 +323,7 @@ export async function hwRun(id) {
   // Виджет одного места выбора.
   const widget = i => {
     const s = slots[i], v = answers[i] ?? '';
-    const st = checked ? ' ' + grade(v, c.answers[i]) : '';
+    const st = checked ? ' ' + grade(v, keyFor(c, answers)[i]) : '';
     if (s.kind === 'inline') {
       // длинные варианты (вопрос с a–d) - столбиком с буквами, как в книге
       const vert = s.opts.some(o => o.length > 20);
@@ -321,7 +347,7 @@ export async function hwRun(id) {
   // верно, но не как в ключе (второй вариант) - подсказываем, как в ключе
   const fix = i => {
     if (!checked) return '';
-    const key = String(c.answers[i]).split(' | '), g = grade(answers[i], c.answers[i]);
+    const key = String(keyFor(c, answers)[i]).split(' | '), g = grade(answers[i], keyFor(c, answers)[i]);
     if (g === 'ok') return key.length > 1 && !same(answers[i], key[0]) ? `<span class="fix key">в ключе: ${esc(key[0])}</span>` : '';
     // выделяем, какие слова не совпали: в ответе ключа - чего не хватает, «у тебя» - что лишнее/неверное
     const mine = short(answers[i]).split(' ').filter(Boolean), keyw = short(key[0]).split(' ').filter(Boolean);
@@ -362,7 +388,7 @@ export async function hwRun(id) {
     const textBlock = c.type === 'textab'
       ? `<div class="flash hwtext">${esc(c.text).replace(/\{(\d+)\}/g, (_, k) => {
           const i = +k - 1, v = answers[i];
-          const st = checked ? { ok: 'good', typo: 'typo', bad: 'wrong' }[grade(v, c.answers[i])] : (v ? 'filled' : '');
+          const st = checked ? { ok: 'good', typo: 'typo', bad: 'wrong' }[grade(v, keyFor(c, answers)[i])] : (v ? 'filled' : '');
           return `<span class="gap ${st}">${v ? esc(v) : `___${k}`}</span>`;
         })}</div>
         <div class="ablines">${(c.choices || []).map((_, i) => `<div class="abline"><b>${i + 1}:</b> ${widget(i)} ${fix(i)}</div>`).join('')}</div>`
@@ -454,7 +480,7 @@ export async function hwRun(id) {
     }
     let right = 0;
     for (let i = 0; i < slots.length; i++) {
-      const ok = grade(answers[i], c.answers[i]) !== 'bad';
+      const ok = grade(answers[i], keyFor(c, answers)[i]) !== 'bad';
       if (ok) right++;
       else if (slots[i].opts) {
         const it = c.items?.[slots[i].item];
