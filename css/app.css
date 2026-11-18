@@ -542,3 +542,22 @@ body.wide #app { max-width: none; margin-right: 16px; }
   #app { margin-left: max(340px, calc(50% - 320px)); padding-bottom: 60px; }
 }
 @media (min-width: 1150px) { .hwside { left: 96px; } }
+/* 📖 словарик - на ПК в левой колонке внизу (Яна 18.11) */
+.dict { display: none; }
+@media (min-width: 1150px) {
+  .dict { display: block; position: fixed; left: 96px; bottom: 14px; width: 228px; max-height: 330px; overflow: auto; z-index: 15;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; font-size: .92em; }
+  .hwside { max-height: calc(100vh - var(--side-top, 270px) - 370px); }
+}
+.dict-h { font-weight: 600; margin-bottom: 6px; }
+.dict input { width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: var(--bg, #fff); color: inherit; }
+.dict-w { margin-top: 8px; font-size: 1.15em; display: flex; align-items: center; gap: 4px; }
+.dict-w .icon { padding: 0 4px; }
+.dict-tr { color: var(--muted, #777); font-family: "Segoe UI", "Lucida Sans Unicode", sans-serif; }
+.dict-f { margin: 6px 0; padding: 5px 8px; border-radius: 8px; background: #eef4ff; font-weight: 600; }
+.dict-f.irr { background: #fff1e6; }
+.dict-f small { display: block; font-weight: 400; opacity: .7; }
+.dict-ru { margin-top: 4px; font-weight: 600; }
+.dict-mine { font-size: .9em; color: var(--accent, #6c5ce7); }
+.dict-p { margin-top: 3px; line-height: 1.35; } .dict-p i { color: var(--muted, #888); }
+.dict-empty { margin-top: 8px; color: var(--muted, #888); }

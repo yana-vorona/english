@@ -13,6 +13,7 @@ import { duelView } from './duel.js';
 import { gameView } from './game.js';
 import { playView } from './arcade.js';
 import { startUpdates, refreshApp } from './update.js';
+import { mountDict } from './dict.js';
 
 const $app = document.getElementById('app');
 
@@ -822,3 +823,4 @@ navigator.storage?.persist?.();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
+mountDict();
