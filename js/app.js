@@ -13,7 +13,7 @@ import { duelView } from './duel.js';
 import { gameView } from './game.js';
 import { playView } from './arcade.js';
 import { startUpdates, refreshApp } from './update.js';
-import { mountDict } from './dict.js';
+import { mountDict, dictView } from './dict.js';
 
 const $app = document.getElementById('app');
 
@@ -692,6 +692,7 @@ const routes = [
   [/^#\/game$/, gameView],
   [/^#\/play\/(\w+)$/, playView],
   [/^#\/hw\/([^/]+)$/, hwRun],
+  [/^#\/dict$/, dictView],
 ];
 
 // Вернулась из упражнения в список - остаёмся там, где была (а не наверху)

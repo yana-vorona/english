@@ -542,15 +542,27 @@ body.wide #app { max-width: none; margin-right: 16px; }
   #app { margin-left: max(340px, calc(50% - 320px)); padding-bottom: 60px; }
 }
 @media (min-width: 1150px) { .hwside { left: 96px; } }
-/* 📖 словарик - на ПК в левой колонке внизу (Яна 18.11) */
-.dict { display: none; }
-@media (min-width: 1150px) {
-  .dict { display: block; position: fixed; left: 96px; bottom: 14px; width: 228px; max-height: 330px; overflow: auto; z-index: 15;
-    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; font-size: .92em; }
+/* 📖 словарик (Яна 18.11): на ПК - открыт, таскается за заголовок; на телефоне - свёрнут, как «Фиксить» */
+.dict { position: fixed; z-index: 15; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; font-size: .92em;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+@media (min-width: 1001px) {
+  .dict { left: 96px; bottom: 14px; width: 228px; max-height: 330px; overflow: auto; }
+  .dict .dict-h { cursor: grab; user-select: none; touch-action: none; }
+  .dict .dict-go { display: none; }
   .hwside { max-height: calc(100vh - var(--side-top, 270px) - 370px); }
 }
+@media (max-width: 1000px) {
+  .dict { left: 10px; bottom: calc(120px + env(safe-area-inset-bottom)); padding: 5px 10px; }
+  .dict:not(.open) .dict-body { display: none; }
+  .dict:not(.open) .dict-h { margin: 0; }
+  .dict.open { width: min(320px, calc(100vw - 20px)); max-height: calc(100vh - 200px); overflow: auto; padding: 8px 10px; z-index: 17; }
+  .dict.open .dict-go { margin-top: 8px; }
+  .dict-h { cursor: pointer; }
+}
+.dict-page input { font-size: 1.1em; }
+.dict-page { max-width: 520px; }
 .dict-h { font-weight: 600; margin-bottom: 6px; }
-.dict input { width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: var(--bg, #fff); color: inherit; }
+.dict input, .dict-page input { width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: var(--bg, #fff); color: inherit; }
 .dict-w { margin-top: 8px; font-size: 1.15em; display: flex; align-items: center; gap: 4px; }
 .dict-w .icon { padding: 0 4px; }
 .dict-tr { color: var(--muted, #777); font-family: "Segoe UI", "Lucida Sans Unicode", sans-serif; }
@@ -561,3 +573,6 @@ body.wide #app { max-width: none; margin-right: 16px; }
 .dict-mine { font-size: .9em; color: var(--accent, #6c5ce7); }
 .dict-p { margin-top: 3px; line-height: 1.35; } .dict-p i { color: var(--muted, #888); }
 .dict-empty { margin-top: 8px; color: var(--muted, #888); }
+.flash .hide { visibility: hidden; } .listen-btn { margin: 6px auto 10px; display: block; }
+/* правильный ответ - всегда с новой строки целиком (Яна 18.11: «не добил предложение, пиши с новой строки всегда») */
+.fix { display: block; margin: 4px 0 2px; } .fix .yours { font-weight: 400; }

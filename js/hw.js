@@ -354,7 +354,7 @@ export async function hwRun(id) {
     const hl = key[0].split(/(\s+)/).map(t => { const w = short(t); return w && !mine.includes(w) ? `<mark>${esc(t)}</mark>` : esc(t); }).join('');
     const extra = mine.filter(w => !keyw.includes(w));
     const yours = g === 'bad' && extra.length && extra.length <= 4 ? ` <span class="yours">у тебя: ${extra.map(w => `<s>${esc(w)}</s>`).join(' ')}</span>` : '';
-    return `<span class="fix${g === 'typo' ? ' typo' : ''}">${g === 'typo' ? 'опечатка → ' : '→ '}${hl}</span>${yours}`;
+    return `<span class="fix${g === 'typo' ? ' typo' : ''}">${g === 'typo' ? 'опечатка → ' : '→ '}${hl}${yours}</span>`;
   };
 
   // «…из упражнения 2» - текст того упражнения (с ответами по ключу) рядом: справа на компьютере, сверху на телефоне

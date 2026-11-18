@@ -76,14 +76,9 @@ function view(r) {
     ${r.parts.map(p => `<div class="dict-p"><i>${esc(POS[p.pos] || p.pos)}</i> ${esc(p.ru.join(', '))}</div>`).join('')}`;
 }
 
-export function mountDict() {
-  const box = document.createElement('section');
-  box.className = 'dict';
-  box.innerHTML = `<div class="dict-h">📖 Словарик</div>
-    <input id="dictq" placeholder="слово по-английски или по-русски" autocapitalize="off" autocorrect="off" spellcheck="false">
-    <div id="dictr"></div>`;
-  document.body.appendChild(box);
-  const inp = box.querySelector('#dictq'), out = box.querySelector('#dictr');
+// поиск + результат внутри box (стикер или страница «Словарик»)
+function bind(box) {
+  const inp = box.querySelector('.dictq'), out = box.querySelector('.dictr');
   let t = 0, n = 0;
   const go = async () => {
     const q = inp.value.trim();
@@ -96,4 +91,59 @@ export function mountDict() {
   inp.addEventListener('input', () => { clearTimeout(t); t = setTimeout(go, 450); });
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(t); go(); } });
   out.addEventListener('click', e => { const b = e.target.closest('[data-say]'); if (b) say(b.dataset.say); });
+  return { inp, go };
+}
+const FORM = `<input class="dictq" placeholder="слово по-английски или по-русски" autocapitalize="off" autocorrect="off" spellcheck="false"><div class="dictr"></div>`;
+const wide = matchMedia('(min-width: 1001px)');
+const ls = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch { return null; } };
+
+// Стикер: на ПК - открыт, таскается за заголовок (место запоминается); на телефоне - свёрнут, как «Фиксить»:
+// щелчок по «📖 Словарик» разворачивает, «Раздел» открывает отдельную страницу (Яна 18.11).
+export function mountDict() {
+  const box = document.createElement('section');
+  box.className = 'dict';
+  box.innerHTML = `<div class="dict-h" title="на ПК - потяни, чтобы переставить">📖 Словарик</div><div class="dict-body">${FORM}
+    <button type="button" class="talkBtn dict-go">📋 Раздел</button></div>`;
+  document.body.appendChild(box);
+  bind(box);
+  const head = box.querySelector('.dict-h');
+  box.querySelector('.dict-go').onclick = () => { box.classList.remove('open'); location.hash = '#/dict'; };
+  const place = () => {
+    const p = ls('dictPos');
+    if (wide.matches && p) {
+      const x = Math.min(Math.max(0, p.x), innerWidth - 120), y = Math.min(Math.max(0, p.y), innerHeight - 50);
+      Object.assign(box.style, { left: x + 'px', top: y + 'px', bottom: 'auto' });
+    } else box.removeAttribute('style');
+  };
+  place();
+  addEventListener('resize', place);
+  wide.addEventListener?.('change', place);
+  let drag = null, moved = false;
+  head.addEventListener('pointerdown', e => {
+    if (!wide.matches) return;
+    const r = box.getBoundingClientRect();
+    drag = { dx: e.clientX - r.left, dy: e.clientY - r.top }; moved = false;
+    head.setPointerCapture(e.pointerId);
+  });
+  head.addEventListener('pointermove', e => {
+    if (!drag) return;
+    moved = true;
+    const x = Math.min(Math.max(0, e.clientX - drag.dx), innerWidth - 120), y = Math.min(Math.max(0, e.clientY - drag.dy), innerHeight - 50);
+    Object.assign(box.style, { left: x + 'px', top: y + 'px', bottom: 'auto' });
+  });
+  head.addEventListener('pointerup', () => {
+    if (drag && moved) { const r = box.getBoundingClientRect(); ls('dictPos', { x: r.left, y: r.top }); }
+    drag = null;
+  });
+  head.addEventListener('click', () => { if (!wide.matches) { box.classList.toggle('open'); if (box.classList.contains('open')) box.querySelector('.dictq').focus(); } });
+}
+
+// Отдельная страница «Словарик» (#/dict)
+export function dictView() {
+  const app = document.getElementById('app');
+  app.innerHTML = `<header class="top"><a class="back" href="#/">‹</a><h1>📖 Словарик</h1></header><section class="dict-page">${FORM}</section>`;
+  const { inp } = bind(app.querySelector('.dict-page'));
+  const q = document.querySelector('.dict .dictq')?.value;
+  if (q) { inp.value = q; inp.dispatchEvent(new Event('input')); }
+  inp.focus();
 }

@@ -187,6 +187,7 @@ const MODES = [
   ['pair', '🧩 Создай пару'],
   ['guess', '🤔 Догадайся'],
   ['recall', '💭 Вспомни'],
+  ['listen', '👂 На слух'],
   ['type', '⌨️ Напечатай'],
 ];
 
@@ -253,6 +254,24 @@ const RUN = {
       setTimeout(() => done(missed), missed ? 900 : 600);
     });
   }),
+
+  // 👂 На слух (Яна 18.11 вместо «Напечатай»): слово только звучит, выбираешь перевод; после ответа слово показывается.
+  listen: (ex, batch, pool, mark) => runQueue(ex, batch, (c, done, left) => {
+    ex.innerHTML = `
+      <div class="flash"><button type="button" class="btn big listen-btn" data-say="${esc(c.en)}">🔊 Послушать ещё</button><div class="ex-word hide" id="lw">${esc(c.en)}</div>${ipa(c).replace('class="ex-ipa"', 'class="ex-ipa hide" id="li"')}</div>
+      <div class="opts">${options(c, pool || batch).map(o => `<button class="opt">${esc(o)}</button>`).join('')}</div>
+      <p class="muted center">Осталось: ${left}</p>`;
+    say(c.en);
+    let missed = false;
+    ex.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+      if (b.disabled) return;
+      if (b.textContent !== c.ru) { missed = true; b.classList.add('bad'); b.disabled = true; say(c.en); return; }
+      ex.querySelectorAll('.opt').forEach(x => { x.disabled = true; });
+      b.classList.add('ok');
+      ex.querySelectorAll('.hide').forEach(x => x.classList.remove('hide'));
+      setTimeout(() => done(missed), missed ? 1400 : 1100);
+    });
+  }, mark),
 
   recall: (ex, batch, pool, mark) => runQueue(ex, batch, (c, done, left) => {
     ex.innerHTML = `
@@ -399,6 +418,7 @@ export const REVIEW_GAMES = [
   ['choice', '🔁 Выбор перевода'],
   ['pair', '🧩 Пары'],
   ['recall', '💭 Вспомни'],
+  ['listen', '👂 На слух'],
   ['type', '⌨️ Напечатай'],
 ];
 const reviewGame = () => { const g = load('reviewGame', 'choice'); return REVIEW_GAMES.some(x => x[0] === g) ? g : 'choice'; };
