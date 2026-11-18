@@ -576,3 +576,6 @@ body.wide #app { max-width: none; margin-right: 16px; }
 .flash .hide { visibility: hidden; } .listen-btn { margin: 6px auto 10px; display: block; }
 /* правильный ответ - всегда с новой строки целиком (Яна 18.11: «не добил предложение, пиши с новой строки всегда») */
 .fix { display: block; margin: 4px 0 2px; } .fix .yours { font-weight: 400; }
+.wpic { display: block; max-width: 100%; max-height: 200px; margin: 10px auto 0; border-radius: 10px; } .wpic.hide { display: none; }
+/* телефон: вместо стикера «Фиксить» - свёрнутый словарик (Яна 18.11); раздел «Фиксить» - в меню снизу */
+@media (max-width: 1000px) { #stickers { display: none; } .dict { bottom: calc(82px + env(safe-area-inset-bottom)); } }

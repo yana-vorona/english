@@ -106,6 +106,8 @@ function synthSay(text, id) {
 const sayBtn = en => `<button type="button" class="icon say" data-say="${esc(en)}" aria-label="Произнести">🔊</button>`;
 // транскрипция под словом (есть не у всех слов — см. fillTranscriptions)
 const ipa = c => (c.tr ? `<div class="ex-ipa">${esc(c.tr)}</div>` : '');
+// картинка-мем к слову (Яна 18.11: Unit 9 - гифки из сериалов и мемов), hide - показать после ответа
+const pic = (c, hide) => (c.img ? `<img class="wpic${hide ? ' hide' : ''}" src="${esc(c.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '');
 
 // Варианты ответа: сначала из той же темы, потом из остальных.
 function options(card, pool, field = 'ru', n = 4) {
@@ -197,7 +199,7 @@ const RUN = {
     const render = () => {
       const c = batch[i];
       ex.innerHTML = `
-        <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}<div class="ex-tr">${esc(c.ru)}</div>${c.example ? `<div class="exmp">${esc(c.example)} ${sayBtn(c.example)}</div>` : ''}</div>
+        <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}<div class="ex-tr">${esc(c.ru)}</div>${pic(c)}${c.example ? `<div class="exmp">${esc(c.example)} ${sayBtn(c.example)}</div>` : ''}</div>
         <p class="muted center">${i + 1} из ${batch.length}</p>
         <button class="btn primary wide" id="nx">Дальше</button>`;
       ex.querySelector('#nx').onclick = () => (++i < batch.length ? render() : resolve(true));
@@ -240,7 +242,7 @@ const RUN = {
 
   guess: (ex, batch, pool) => runQueue(ex, batch, (c, done, left) => {
     ex.innerHTML = `
-      <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}</div>
+      <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}${pic(c)}</div>
       <div class="opts">${options(c, pool).map(o => `<button class="opt">${esc(o)}</button>`).join('')}</div>
       <div id="after"></div><p class="muted center">Осталось: ${left}</p>`;
     say(c.en);
@@ -258,7 +260,7 @@ const RUN = {
   // 👂 На слух (Яна 18.11 вместо «Напечатай»): слово только звучит, выбираешь перевод; после ответа слово показывается.
   listen: (ex, batch, pool, mark) => runQueue(ex, batch, (c, done, left) => {
     ex.innerHTML = `
-      <div class="flash"><button type="button" class="btn big listen-btn" data-say="${esc(c.en)}">🔊 Послушать ещё</button><div class="ex-word hide" id="lw">${esc(c.en)}</div>${ipa(c).replace('class="ex-ipa"', 'class="ex-ipa hide" id="li"')}</div>
+      <div class="flash"><button type="button" class="btn big listen-btn" data-say="${esc(c.en)}">🔊 Послушать ещё</button><div class="ex-word hide" id="lw">${esc(c.en)}</div>${ipa(c).replace('class="ex-ipa"', 'class="ex-ipa hide" id="li"')}${pic(c, true)}</div>
       <div class="opts">${options(c, pool || batch).map(o => `<button class="opt">${esc(o)}</button>`).join('')}</div>
       <p class="muted center">Осталось: ${left}</p>`;
     say(c.en);
@@ -275,7 +277,7 @@ const RUN = {
 
   recall: (ex, batch, pool, mark) => runQueue(ex, batch, (c, done, left) => {
     ex.innerHTML = `
-      <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}<div class="ex-tr hide" id="tr">${esc(c.ru)}</div></div>
+      <div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}<div class="ex-tr hide" id="tr">${esc(c.ru)}</div>${pic(c)}</div>
       <p class="muted center" id="ask">&nbsp;</p>
       <div class="two" id="btns"><button class="btn big" id="no">🤔 Не знаю</button><button class="btn primary big" id="yes">✅ Знаю</button></div>
       <p class="muted center">Осталось: ${left}</p>`;
@@ -484,7 +486,7 @@ export async function reviewView(scope, n, seen = new Set()) {
           <button data-m="lazy" class="${lazy ? 'on' : ''}">😌 Лениво</button>
         </div>
         <div class="flash">${item.retry ? '<span class="badge box">🔁 ещё раз</span>' : ''}
-          <div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}</div>
+          <div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}${pic(c)}</div>
         <label class="check center"><input type="checkbox" id="hard" ${c.hard ? 'checked' : ''}> ⭐ Сложное слово — повторять чаще</label>
         <div id="area"></div><div id="after"></div>
         <p class="muted center">Осталось: ${queue.length + 1}</p>`;
