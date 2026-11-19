@@ -61,7 +61,7 @@ function defaultDifficulty(c) {
 }
 
 const DIFF = { green: '🟢', yellow: '🟡', red: '🔴' };
-const title = h => h.book === 'free' ? `✍️ ${h.title || 'Своё задание'}` : `${BOOK[h.book] || h.book} стр. ${h.page} упр. ${h.ex}`;
+const title = h => h.book === 'text' ? `📝 ${h.title || 'Мой текст'}` : h.book === 'free' ? `✍️ ${h.title || 'Своё задание'}` : `${BOOK[h.book] || h.book} стр. ${h.page} упр. ${h.ex}`;
 const norm = s => String(s || '').toLowerCase().replace(/[’`]/g, "'").replace(/\s+/g, ' ').trim();
 // Ответ засчитываем без учёта сокращений: «she had heard» = «she'd heard», «would not» = «wouldn't»; «that» в начале и точка в конце не важны.
 const NEG = { 'will not': "won't", 'can not': "can't", 'cannot': "can't", 'shall not': "shan't" };
@@ -236,8 +236,8 @@ export async function hwList() {
     const diff = h.difficulty || (c ? defaultDifficulty(c) : null);
     return `<a class="deck hw" href="#/hw/${h.id}">
       <div class="deck-head"><span class="deck-name">${esc(title(h))}</span>
-        <span>${c ? `⏱ ~${mins(h)} мин ${DIFF[diff] || ''}` : (h.book === 'free' ? '✍️' : '⏳')}</span></div>
-      <div class="deck-meta">${h.lesson ? `к уроку ${esc(fmtDate(h.lesson))} · ` : ''}${c ? esc(formatOf(c)) : (h.book === 'free' ? (h.tutor?.answer ? '🦊 Claude ответил' : 'своё задание: разбор с Claude') : 'жду содержимого — разложу упражнение по кнопкам')}</div>
+        <span>${c ? `⏱ ~${mins(h)} мин ${DIFF[diff] || ''}` : (h.book === 'free' ? '✍️' : h.book === 'text' ? '📝' : '⏳')}</span></div>
+      <div class="deck-meta">${h.lesson ? `к уроку ${esc(fmtDate(h.lesson))} · ` : ''}${c ? esc(formatOf(c)) : (h.book === 'text' ? (h.essay?.sents?.length ? `проверено: ${h.essay.sents.filter(x => x.ok).length} из ${h.essay.sents.length} верно` : 'свой текст на проверку') : h.book === 'free' ? (h.tutor?.answer ? '🦊 Claude ответил' : 'своё задание: разбор с Claude') : 'жду содержимого — разложу упражнение по кнопкам')}</div>
       ${h.status === 'done' ? `<div class="deck-meta">✅ ${h.doneAt ? new Date(h.doneAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + ' · ' : ''}${h.result ? `${h.result.right} из ${h.result.total}` : 'сделано'}</div>` : ''}
     </a>`;
   };
@@ -258,10 +258,10 @@ async function addDialog() {
   const today = await nextLesson();
   d.innerHTML = `<form method="dialog">
     <h3>Новое ДЗ</h3>
-    <div class="seg book three"><button type="button" data-b="РТ" class="on">📒 РТ</button><button type="button" data-b="Уч">📘 Учебник</button><button type="button" data-b="free">✍️ Своё</button></div>
+    <div class="seg book three"><button type="button" data-b="РТ" class="on">📒 РТ</button><button type="button" data-b="Уч">📘 Учебник</button><button type="button" data-b="free">✍️ Своё</button><button type="button" data-b="text">📝 Мой текст</button></div>
     <div class="bookonly"><label>Страница<input name="page" inputmode="numeric"></label>
     <label>Упражнения (можно несколько: 1, 3)<input name="ex"></label></div>
-    <label class="freeonly hidden">Что задано (например: разобрать видео)<input name="title"></label>
+    <label class="freeonly hidden">Что задано / тема текста<input name="title"></label>
     <label>К уроку<input name="lesson" type="date" value="${today}"></label>
     <div class="row rev"><button value="ok" class="btn primary">Добавить</button><button value="cancel" class="btn ghost" formnovalidate>Отмена</button></div>
   </form>`;
@@ -270,16 +270,16 @@ async function addDialog() {
   d.querySelectorAll('[data-b]').forEach(b => b.onclick = () => {
     book = b.dataset.b;
     d.querySelectorAll('[data-b]').forEach(x => x.classList.toggle('on', x === b));
-    d.querySelector('.bookonly').classList.toggle('hidden', book === 'free');
-    d.querySelector('.freeonly').classList.toggle('hidden', book !== 'free');
+    d.querySelector('.bookonly').classList.toggle('hidden', book === 'free' || book === 'text');
+    d.querySelector('.freeonly').classList.toggle('hidden', book !== 'free' && book !== 'text');
   });
   d.addEventListener('close', async () => {
     const f = d.querySelector('form');
-    if (d.returnValue === 'ok' && book === 'free') {
-      const h = await S.addHw({ book: 'free', page: '', ex: '', lesson: f.lesson.value });
-      h.title = f.title.value.trim() || 'Своё задание';
+    if (d.returnValue === 'ok' && (book === 'free' || book === 'text')) {
+      const h = await S.addHw({ book, page: '', ex: '', lesson: f.lesson.value });
+      h.title = f.title.value.trim() || (book === 'text' ? 'Мой текст' : 'Своё задание');
       await S.saveHw(h);
-      hwList();
+      if (book === 'text') location.hash = '#/hw/' + h.id; else hwList();
     } else if (d.returnValue === 'ok' && f.page.value.trim() && f.ex.value.trim()) {
       const exs = f.ex.value.split(/[,\s]+/).filter(Boolean);
       for (const ex of exs) await S.addHw({ book, page: f.page.value.trim(), ex, lesson: f.lesson.value });
@@ -301,6 +301,7 @@ export async function hwRun(id) {
   const factor = await S.getMeta('hwFactor', 1);
 
   if (h.book === 'free') return freeRun(h);
+  if (h.book === 'text') return textRun(h);
   if (!c) {
     $app.innerHTML = `
       <header class="top"><a class="back" href="${back}">‹</a><h1 class="grow">${esc(title(h))}</h1><button class="icon" id="del">🗑</button></header>
@@ -320,10 +321,13 @@ export async function hwRun(id) {
   const mins = h.minutes || estimate(c, factor);
   const diff = h.difficulty || defaultDifficulty(c);
 
+  // 18.11 Яна: первое «Проверить» - только ГДЕ ошибки (без ответов), второе - ответы. Пометка держится, пока ответ не поменяла.
+  const P = () => (!checked && h.peek ? h.peek : null);
+  const peekSt = i => { const peek = P(); return peek && norm(String(answers[i] ?? '')) === norm(String(peek.answers[i] ?? '')) ? grade(answers[i], keyFor(c, peek.answers)[i]) : ''; };
   // Виджет одного места выбора.
   const widget = i => {
     const s = slots[i], v = answers[i] ?? '';
-    const st = checked ? ' ' + grade(v, keyFor(c, answers)[i]) : '';
+    const st = checked ? ' ' + grade(v, keyFor(c, answers)[i]) : peekSt(i) ? ' ' + peekSt(i) : '';
     if (s.kind === 'inline') {
       // длинные варианты (вопрос с a–d) - столбиком с буквами, как в книге
       const vert = s.opts.some(o => o.length > 20);
@@ -388,7 +392,7 @@ export async function hwRun(id) {
     const textBlock = c.type === 'textab'
       ? `<div class="flash hwtext">${esc(c.text).replace(/\{(\d+)\}/g, (_, k) => {
           const i = +k - 1, v = answers[i];
-          const st = checked ? { ok: 'good', typo: 'typo', bad: 'wrong' }[grade(v, keyFor(c, answers)[i])] : (v ? 'filled' : '');
+          const st = checked ? { ok: 'good', typo: 'typo', bad: 'wrong' }[grade(v, keyFor(c, answers)[i])] : peekSt(i) ? { ok: 'good', typo: 'typo', bad: 'wrong' }[peekSt(i)] : (v ? 'filled' : '');
           return `<span class="gap ${st}">${v ? esc(v) : `___${k}`}</span>`;
         })}</div>
         <div class="ablines">${(c.choices || []).map((_, i) => `<div class="abline"><b>${i + 1}:</b> ${widget(i)} ${fix(i)}</div>`).join('')}</div>`
@@ -412,7 +416,7 @@ export async function hwRun(id) {
       ${textBlock}
       ${items ? `<ol class="hwitems">${items}</ol>` : ''}
       <p class="warn" id="left"></p>
-      ${checked ? afterCheck() : '<button class="btn primary wide" id="check">✅ Проверить</button>'}
+      ${checked ? afterCheck() : P() ? `<p class="card peekmsg">🔍 С первого раза: <b>${P().right} из ${slots.length}</b>. ${P().right === slots.length ? 'Всё верно!' : 'Красным — где ошибка, жёлтым — опечатка. Исправь и нажми ещё раз — тогда покажу ответы.'}</p><button class="btn primary wide" id="check">✅ Проверить ещё раз и показать ответы</button>` : '<button class="btn primary wide" id="check">✅ Проверить</button>'}
       <button class="btn wide" id="copy">📋 Скопировать ответы</button>
       ${checked || manualDone ? '' : '<button class="btn ghost wide" id="manual">✓ Уже сделала (в тетради)</button>'}
       ${checked ? '<button class="btn ghost wide" id="redo">🔄 Пройти заново</button>' : ''}`;
@@ -422,6 +426,7 @@ export async function hwRun(id) {
   const afterCheck = () => `
     <div class="card result">
       <p class="big-num">✅ ${h.result.right} из ${h.result.total}</p>
+      ${h.result.after != null && h.result.after !== h.result.right ? `<p class="muted">с первого раза · после исправлений: ${h.result.after} из ${h.result.total}</p>` : ''}
       <p class="muted">${h.result.right === h.result.total ? 'Без единой ошибки 🔥' : 'Ошибки уже в тренажёре — в теме «🎯 Тренажёр».'}</p>
       <p><b>Как по времени?</b></p>
       <div class="seg tune">${[['fast', '⚡ Быстрее'], ['ok', '👌 Так'], ['slow', '🐢 Дольше']].map(([k, l]) =>
@@ -462,7 +467,7 @@ export async function hwRun(id) {
         hwRun(id);
       });
       $app.querySelector('#redo').onclick = async () => {
-        h.answers = []; h.status = 'todo'; h.result = null;
+        h.answers = []; h.status = 'todo'; h.result = null; h.peek = null;
         await S.saveHw(h);
         hwRun(id);
       };
@@ -478,6 +483,12 @@ export async function hwRun(id) {
       $app.querySelector(`.slot[data-s="${missing[0]}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       return;
     }
+    if (!h.peek) {  // первое нажатие - только отметить, где ошибки
+      const r1 = slots.filter((_, i) => grade(answers[i], keyFor(c, answers)[i]) !== 'bad').length;
+      h.peek = { answers: answers.slice(), right: r1, at: Date.now() };
+      await S.saveHw(h);
+      if (r1 < slots.length) { const y = scrollY; render(); scrollTo(0, y); return; }
+    }
     let right = 0;
     for (let i = 0; i < slots.length; i++) {
       const ok = grade(answers[i], keyFor(c, answers)[i]) !== 'bad';
@@ -489,7 +500,8 @@ export async function hwRun(id) {
       }
       await S.logEvent('hw', h.id, ok);
     }
-    Object.assign(h, { status: 'done', doneAt: Date.now(), result: { right, total: slots.length }, minutes: mins, difficulty: diff });
+    // в результат - первая попытка (честный счёт), после исправлений - отдельно
+    Object.assign(h, { status: 'done', doneAt: Date.now(), result: { right: h.peek.right, total: slots.length, after: right }, minutes: mins, difficulty: diff });
     await S.saveHw(h);
     hwRun(id);
   };
@@ -572,6 +584,76 @@ function freeRun(h) {
     }, 15000);
   }
   $app.querySelector('.chat').lastElementChild?.scrollIntoView({ block: 'end' });
+}
+
+// 📝 «Мой текст» (Яна 18.11): 1-е «Проверить» - какие предложения с ошибкой; исправляешь, 2-е - проверяет исправленное,
+// снова только верно/неверно; 3-е - показывает ошибки и как правильно. Проверяет Claude на ПК (app_fix.py essays).
+let textPoll = null;
+function textRun(h) {
+  const e = h.essay || {};
+  const waiting = e.status === 'new' || e.status === 'work';
+  const sents = e.sents || [];
+  const round = e.round || 0;
+  const shown = !!e.shown;
+  const head = `<header class="top"><a class="back" href="#/hw">‹</a><h1 class="grow">${esc(title(h))}</h1><button class="icon" id="del">🗑</button></header>
+    ${h.lesson ? `<p class="muted">к уроку ${esc(fmtDate(h.lesson))}</p>` : ''}`;
+  let body;
+  if (!round || e.status === 'error' && round === 1) {
+    body = `${e.status === 'error' ? '<p class="warn">Не получилось проверить, нажми ещё раз 🙏</p>' : ''}
+      <p class="muted">Пиши свой текст по-английски. «Проверить» покажет, в каких предложениях ошибки, — но не какие: сначала попробуй найти сама.</p>
+      <textarea id="etext" rows="10" class="etext" placeholder="My favourite place is…">${esc(e.text || h.draft || '')}</textarea>
+      <button class="btn primary wide" id="echeck">✅ Проверить</button>`;
+  } else if (waiting) {
+    body = `<div class="empty">🦊 Проверяю… (около минуты)</div>`;
+  } else {
+    const okN = sents.filter(x => x.ok).length;
+    const msg = shown ? `Ошибки и как правильно 👇` : okN === sents.length ? 'Все предложения верные 🔥' : round === 1
+      ? 'Красным — предложения с ошибкой. Исправь прямо в них и нажми «Проверить» ещё раз.'
+      : 'Снова проверила: зелёным — теперь верно, красным — ещё есть ошибка. Попробуй ещё или нажми «Показать ошибки».';
+    body = `<p class="card">✅ ${okN} из ${sents.length} предложений верно${e.first != null && round > 1 ? ` · с первого раза: ${e.first}` : ''}<br><span class="muted">${msg}</span></p>
+      <ol class="esents">${sents.map((x, i) => x.ok ? `<li class="eok">${esc(x.s)}</li>`
+        : shown ? `<li class="ebad"><s>${esc(x.s)}</s><div class="fix">→ ${esc(x.fix)}</div>${x.why ? `<div class="muted">${esc(x.why)}</div>` : ''}</li>`
+        : `<li class="ebad"><textarea class="esent" data-i="${i}" rows="2">${esc(x.s)}</textarea></li>`).join('')}</ol>
+      ${okN === sents.length || shown ? '' : round === 1 ? '<button class="btn primary wide" id="echeck2">✅ Проверить исправленное</button>'
+        : '<button class="btn primary wide" id="echeck2">✅ Проверить ещё раз</button><button class="btn wide" id="eshow">👀 Показать ошибки</button>'}
+      <button class="btn ghost wide" id="eagain">✏️ Новый текст</button>`;
+  }
+  $app.innerHTML = head + body + (h.status === 'done' ? '' : '<button class="btn ghost wide" id="manual">✓ Сделала</button>');
+  bindDelete(h);
+  bindManual(h);
+  const send = async (patch) => {
+    Object.assign(e, patch, { status: 'new', at: Date.now() });
+    h.essay = e;
+    Object.assign(h, { status: 'done', doneAt: h.doneAt || Date.now(), minutes: h.minutes || 15 });
+    await S.saveHw(h);
+    textRun(h);
+  };
+  const ta = $app.querySelector('#etext');
+  if (ta) ta.oninput = () => { h.draft = ta.value; S.saveHw(h); };
+  $app.querySelector('#echeck')?.addEventListener('click', () => {
+    const text = ta.value.trim();
+    if (!text) { ta.focus(); return; }
+    send({ text, round: 1, sents: [], shown: false, first: null });
+  });
+  $app.querySelector('#echeck2')?.addEventListener('click', () => {
+    $app.querySelectorAll('.esent').forEach(t => { sents[+t.dataset.i].s = t.value.trim(); });
+    send({ round: 2, sents });
+  });
+  $app.querySelector('#eshow')?.addEventListener('click', async () => { e.shown = true; h.essay = e; await S.saveHw(h); textRun(h); });
+  $app.querySelector('#eagain')?.addEventListener('click', async () => {
+    h.draft = sents.map(x => x.ok || !shown || !x.fix ? x.s : x.fix).join(' ');
+    h.essay = {}; await S.saveHw(h); textRun(h);
+  });
+  clearInterval(textPoll);
+  if (waiting) {
+    const here = location.hash;
+    textPoll = setInterval(async () => {
+      if (location.hash !== here) return clearInterval(textPoll);
+      await syncNow();
+      const nh = await S.getHw(h.id);
+      if (nh && !['new', 'work'].includes((nh.essay || {}).status)) { clearInterval(textPoll); textRun(nh); }
+    }, 10000);
+  }
 }
 
 // Сделала без приложения: засчитываем (серия, баллы, глава истории), без проверки.

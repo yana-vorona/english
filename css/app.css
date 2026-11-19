@@ -579,3 +579,10 @@ body.wide #app { max-width: none; margin-right: 16px; }
 .wpic { display: block; max-width: 100%; max-height: 200px; margin: 10px auto 0; border-radius: 10px; } .wpic.hide { display: none; }
 /* телефон: вместо стикера «Фиксить» - свёрнутый словарик (Яна 18.11); раздел «Фиксить» - в меню снизу */
 @media (max-width: 1000px) { #stickers { display: none; } .dict { bottom: calc(82px + env(safe-area-inset-bottom)); } }
+/* 📝 «Мой текст» */
+.etext { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; line-height: 1.5; background: var(--surface); color: inherit; margin: 8px 0; }
+.esents { padding-left: 22px; } .esents li { margin: 8px 0; padding: 8px 10px; border-radius: 10px; line-height: 1.45; }
+.esents li.eok { background: var(--ok-soft); border: 1px solid var(--ok); }
+.esents li.ebad { background: var(--bad-soft); border: 1px solid var(--bad); }
+.esent { width: 100%; box-sizing: border-box; border: 0; background: transparent; font: inherit; color: inherit; resize: vertical; }
+.peekmsg { margin-top: 10px; }
