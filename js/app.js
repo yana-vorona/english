@@ -191,7 +191,7 @@ async function deckView(id) {
     const shown = f ? cards.filter(c => c.en.toLowerCase().includes(f) || c.ru.toLowerCase().includes(f)) : cards;
     $app.querySelector('#count').textContent = f ? `Найдено: ${shown.length} из ${cards.length}` : words(cards.length);
     list.innerHTML = shown.length
-      ? shown.map(c => `<button class="card-row${sel?.has(c.id) ? ' picked' : ''}" data-id="${c.id}"><span class="en">${sel ? `<b class="pk">${sel.has(c.id) ? '☑' : '☐'}</b> ` : ''}${esc(c.en)}</span><span class="ru">${esc(c.ru)}</span>${boxBadge(c)}${c.example ? `<span class="exmp">${esc(c.example)}</span>` : ''}</button>`).join('')
+      ? shown.map(c => `<button class="card-row${sel?.has(c.id) ? ' picked' : ''}" data-id="${c.id}"><span class="en">${sel ? `<b class="pk">${sel.has(c.id) ? '☑' : '☐'}</b> ` : ''}${esc(c.en)}</span><span class="ru">${esc(c.ru)}</span>${boxBadge(c)}${c.img ? `<img class="rowpic" src="${esc(c.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}${c.example ? `<span class="exmp">${esc(c.example)}</span>` : ''}</button>`).join('')
       : `<div class="empty">${cards.length ? 'Ничего не нашлось 🤷' : 'Слов пока нет. Добавь вручную или через импорт.'}</div>`;
     selBar();
   };

@@ -16,7 +16,9 @@ const shuffle = arr => {
 };
 
 // 🔇 в углу экрана занятия выключает озвучку (запоминается).
-const muted = () => load('mute', false);
+// Громкость (Яна 21.11: «не просто включать, а уровень выставлять») — ползунок под 🔊, 0 = без звука.
+const vol = () => Math.max(0, Math.min(1, +load('vol', 1)));
+const muted = () => load('mute', false) || vol() === 0;
 const canSpeak = 'speechSynthesis' in window;
 // Телефон не даёт странице говорить самой, пока голос не «разбудили» касанием:
 // первым касанием в приложении говорим беззвучную фразу — дальше слова звучат сами.
@@ -46,6 +48,7 @@ function speakNow(text, withVoice, id = sayId) {
   if (id !== sayId) return;
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'en-GB';
+  u.volume = vol();
   const v = withVoice && enVoice();
   if (v) u.voice = v;
   live.add(u);
@@ -74,6 +77,7 @@ export function say(text) {
     let a = audioCache.get(key);
     if (a) { audioCache.delete(key); a.currentTime = 0; }
     else a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&tl=en-GB&client=tw-ob&q=' + encodeURIComponent(key));
+    a.volume = vol();
     player = a;
     let started = false;
     const fail = () => {
@@ -139,15 +143,23 @@ function frame(back, title, part, extra = '') {
       <a class="back close" href="${back}" aria-label="Закрыть">✕</a>
       <div class="grow bar"><i style="width:${Math.round(part * 100)}%"></i></div>
       ${extra}
-      <button type="button" class="icon" id="mute" aria-label="Звук">${muted() ? '🔇' : '🔊'}</button>
+      <span class="volw"><button type="button" class="icon" id="mute" aria-label="Звук">${muted() ? '🔇' : '🔊'}</button>
+        <span class="volpop" hidden><input type="range" id="vol" min="0" max="100" step="5" value="${muted() ? 0 : Math.round(vol() * 100)}" aria-label="Громкость"><b id="volv">${muted() ? 0 : Math.round(vol() * 100)}%</b></span></span>
     </header>
     <h2 class="mode">${title}</h2>
     <div id="ex"></div>`;
-  $app.querySelector('#mute').onclick = e => {
-    save('mute', !muted());
-    if (muted()) { speechSynthesis?.cancel(); player?.pause(); }
-    e.currentTarget.textContent = muted() ? '🔇' : '🔊';
+  // 🔊 — открыть/закрыть ползунок громкости; громкость запоминается
+  const mb = $app.querySelector('#mute'), pop = $app.querySelector('.volpop'), rg = $app.querySelector('#vol');
+  mb.onclick = () => { pop.hidden = !pop.hidden; };
+  rg.oninput = () => {
+    const v = +rg.value;
+    save('vol', v / 100); save('mute', v === 0);
+    $app.querySelector('#volv').textContent = v + '%';
+    mb.textContent = v ? '🔊' : '🔇';
+    if (player) player.volume = v / 100;
+    if (!v) { speechSynthesis?.cancel(); player?.pause(); }
   };
+  rg.onchange = () => { if (+rg.value) say('Hello'); };
   const ex = $app.querySelector('#ex');
   ex.addEventListener('click', e => {
     const b = e.target.closest('[data-say]');
@@ -188,12 +200,46 @@ const MODES = [
   ['show', '👀 Знакомство'],
   ['pair', '🧩 Создай пару'],
   ['guess', '🤔 Догадайся'],
+  ['forms', '🔤 Три формы'],
   ['recall', '💭 Вспомни'],
   ['listen', '👂 На слух'],
   ['type', '⌨️ Напечатай'],
 ];
 
+// Неправильные глаголы: карточка en = «draw – drew – drawn», v3 = [draw, drew, drawn] (может быть «burned / burnt»).
+// Неверные варианты — как ошибаются на самом деле: «drawed», перепутанные 2-я и 3-я формы.
+const edForm = w => /e$/.test(w) ? w + 'd' : /[^aeiou]y$/.test(w) ? w.slice(0, -1) + 'ied' : w + 'ed';
+function formOptions(v) {
+  const [b, p, pp] = v, ok = v.join(' – '), reg = edForm(b), p1 = p.split(' / ')[0], pp1 = pp.split(' / ')[0];
+  const cand = [[b, reg, reg], [b, p1, reg], [b, reg, pp1], [b, pp1, p1], [b, p1, p1], [b, pp1, pp1], [b, b, pp1], [b, p1, b]]
+    .map(x => x.join(' – ')).filter(x => x !== ok && x !== [b, p1, pp1].join(' – '));
+  return shuffle([ok, ...shuffle([...new Set(cand)]).slice(0, 3)]);
+}
+
 const RUN = {
+  // 🔤 Три формы: видишь первую форму и перевод — выбираешь, как звучат все три
+  forms: (ex, batch, pool, mark) => runQueue(ex, batch, (c, done, left) => {
+    if (!c.v3) {                                                   // в повторении попалось обычное слово — выбор перевода
+      ex.innerHTML = `<div class="flash"><div class="ex-word">${esc(c.en)} ${sayBtn(c.en)}</div>${ipa(c)}</div>
+        <div class="opts">${options(c, pool || batch).map(o => `<button class="opt">${esc(o)}</button>`).join('')}</div><p class="muted center">Осталось: ${left}</p>`;
+    } else {
+      ex.innerHTML = `<div class="flash"><div class="ex-word">${esc(c.v3[0])} ${sayBtn(c.v3[0])}</div><div class="ex-tr">${esc(c.ru)}</div><div class="ex-ipa hide" id="fi">${esc(c.tr || '')}</div>${pic(c, true)}</div>
+        <div class="opts">${formOptions(c.v3).map(o => `<button class="opt">${esc(o)}</button>`).join('')}</div><p class="muted center">Осталось: ${left}</p>`;
+      say(c.v3[0]);
+    }
+    const right = c.v3 ? c.v3.join(' – ') : c.ru;
+    let missed = false;
+    ex.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+      if (b.disabled) return;
+      if (b.textContent !== right) { missed = true; b.classList.add('bad'); b.disabled = true; return; }
+      ex.querySelectorAll('.opt').forEach(x => { x.disabled = true; });
+      b.classList.add('ok');
+      ex.querySelectorAll('.hide').forEach(x => x.classList.remove('hide'));
+      say(c.en);
+      setTimeout(() => done(missed), missed ? 2600 : 2200);
+    });
+  }, mark),
+
   show: (ex, batch) => new Promise(resolve => {
     let i = 0;
     const render = () => {
@@ -387,11 +433,12 @@ export async function learnView(deckId) {
     save(key, { ids: batch.map(c => c.id), mode });
     const [kind, title] = MODES[mode];
     if (kind === 'type' && load('skipType', false)) continue;          // «без написания»
+    if (kind === 'forms' && !batch.some(c => c.v3)) continue;          // «Три формы» — только для неправильных глаголов
     const skip = kind === 'type' ? '<button class="btn ghost mini" id="skipType">⏭ Пропустить</button>' : '';
     const ex = frame(back, title, mode / MODES.length, `${skip}<span class="muted">${mode + 1}/${MODES.length}</span>`);
     // Сколько новых ещё ждёт в теме (Яна 14.11: «чтобы было видно, сколько новых ещё осталось»)
     $app.querySelector('h2.mode').insertAdjacentHTML('afterend', `<p class="muted center">Сейчас учишь ${batch.length} · ${rest ? `после них ещё новых: ${rest}` : 'это последние новые в теме 🎯'}</p>`);
-    const run = RUN[kind](ex, batch, pool);
+    const run = RUN[kind](ex, kind === 'forms' ? batch.filter(c => c.v3) : batch, pool);
     if (kind === 'type') await Promise.race([run, new Promise(r => { $app.querySelector('#skipType').onclick = r; })]);
     else await run;
   }
@@ -421,6 +468,7 @@ export const REVIEW_GAMES = [
   ['pair', '🧩 Пары'],
   ['recall', '💭 Вспомни'],
   ['listen', '👂 На слух'],
+  ['forms', '🔤 Три формы (глаголы)'],
   ['type', '⌨️ Напечатай'],
 ];
 const reviewGame = () => { const g = load('reviewGame', 'choice'); return REVIEW_GAMES.some(x => x[0] === g) ? g : 'choice'; };

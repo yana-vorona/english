@@ -586,3 +586,13 @@ body.wide #app { max-width: none; margin-right: 16px; }
 .esents li.ebad { background: var(--bad-soft); border: 1px solid var(--bad); }
 .esent { width: 100%; box-sizing: border-box; border: 0; background: transparent; font: inherit; color: inherit; resize: vertical; }
 .peekmsg { margin-top: 10px; }
+
+/* громкость: ползунок под 🔊 */
+.volw { position: relative; }
+.volpop { position: absolute; right: 0; top: 100%; z-index: 30; display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 4px 16px #0002; }
+.volpop[hidden] { display: none; }
+.volpop input { width: 150px; }
+.volpop b { min-width: 40px; text-align: right; font-size: 14px; }
+/* картинка-мем в списке слов темы */
+.card-row:has(.rowpic) { grid-template-columns: 1fr 1fr auto auto; }
+.card-row .rowpic { width: 56px; height: 42px; object-fit: cover; border-radius: 6px; grid-row: 1; grid-column: 4; }
