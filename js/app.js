@@ -825,3 +825,23 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 mountDict();
+
+// ⌨️ Открыта клавиатура на телефоне - прячем все меню, кроме словарика (Яна 23.11).
+// Клавиатура = в фокусе поле для текста и экран заметно «сжался» (кнопка «назад» прячет её без потери фокуса).
+{
+  const narrow = matchMedia('(max-width: 1000px)');
+  const vv = window.visualViewport;
+  let full = 0;
+  const isText = el => el && (el.isContentEditable || el.tagName === 'TEXTAREA' ||
+    (el.tagName === 'INPUT' && !/^(checkbox|radio|range|button|submit|reset|file|color|image|hidden)$/i.test(el.type)));
+  const check = () => {
+    const h = vv ? vv.height : innerHeight;
+    if (h > full) full = h;
+    const kb = narrow.matches && isText(document.activeElement) && (!vv || h < full * 0.8);
+    document.body.classList.toggle('kb', kb);
+  };
+  addEventListener('focusin', () => setTimeout(check, 50));
+  addEventListener('focusout', () => setTimeout(check, 120));
+  vv?.addEventListener('resize', check);
+  addEventListener('orientationchange', () => { full = 0; setTimeout(check, 400); });
+}

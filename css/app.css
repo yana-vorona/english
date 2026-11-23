@@ -579,6 +579,12 @@ body.wide #app { max-width: none; margin-right: 16px; }
 .wpic { display: block; max-width: 100%; max-height: 200px; margin: 10px auto 0; border-radius: 10px; } .wpic.hide { display: none; }
 /* телефон: вместо стикера «Фиксить» - свёрнутый словарик (Яна 18.11); раздел «Фиксить» - в меню снизу */
 @media (max-width: 1000px) { #stickers { display: none; } .dict { bottom: calc(82px + env(safe-area-inset-bottom)); } }
+/* ⌨️ открыта клавиатура на телефоне: все меню прячем, словарик остаётся и опускается вниз (Яна 23.11) */
+@media (max-width: 1000px) {
+  body.kb .nav, body.kb .hubbar, body.kb #stickers, body.kb .fix-sticker, body.kb .selbar { display: none !important; }
+  body.kb .dict { bottom: 8px; }
+  body.kb #app { padding-bottom: 60px; }
+}
 /* 📝 «Мой текст» */
 .etext { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; line-height: 1.5; background: var(--surface); color: inherit; margin: 8px 0; }
 .esents { padding-left: 22px; } .esents li { margin: 8px 0; padding: 8px 10px; border-radius: 10px; line-height: 1.45; }
