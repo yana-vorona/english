@@ -136,6 +136,13 @@ export function mountDict() {
     drag = null;
   });
   head.addEventListener('click', () => { if (!wide.matches) { box.classList.toggle('open'); if (box.classList.contains('open')) box.querySelector('.dictq').focus(); } });
+  // свернуть обратно (Яна 23.11: «Словарик как свернуть обратно?»): кнопка «✕» в заголовке и щелчок мимо словарика
+  const shut = () => { box.classList.remove('open'); if (box.contains(document.activeElement)) document.activeElement.blur(); };
+  const x = document.createElement('span');
+  x.className = 'dict-x'; x.textContent = '✕ свернуть';
+  head.appendChild(x);
+  x.addEventListener('click', e => { e.stopPropagation(); shut(); });
+  document.addEventListener('pointerdown', e => { if (!wide.matches && box.classList.contains('open') && !box.contains(e.target)) shut(); });
 }
 
 // Отдельная страница «Словарик» (#/dict)

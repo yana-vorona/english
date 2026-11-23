@@ -558,7 +558,10 @@ body.wide #app { max-width: none; margin-right: 16px; }
   .dict.open { width: min(320px, calc(100vw - 20px)); max-height: calc(100vh - 200px); overflow: auto; padding: 8px 10px; z-index: 17; }
   .dict.open .dict-go { margin-top: 8px; }
   .dict-h { cursor: pointer; }
+  .dict.open .dict-h { display: flex; justify-content: space-between; align-items: center; }
+  .dict.open .dict-x { display: inline-block; }
 }
+.dict-x { display: none; font-weight: 400; font-size: .85em; color: var(--muted, #777); padding: 2px 8px; border: 1px solid var(--line); border-radius: 8px; margin-left: 8px; }
 .dict-page input { font-size: 1.1em; }
 .dict-page { max-width: 520px; }
 .dict-h { font-weight: 600; margin-bottom: 6px; }
