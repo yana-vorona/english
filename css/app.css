@@ -645,3 +645,6 @@ a.gram { color: #1a56db; text-decoration: underline; cursor: pointer; }
 .gram-side .gs-btns button { min-width: 24px; height: 22px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--muted, #777); cursor: pointer; font: inherit; font-weight: 700; line-height: 1; }
 .gram-side.mini .gram-body { display: none; }
 .gram-side.mini .gs-h { padding-bottom: 0; }
+/* ↩ первый вариант ответа (24.11) — маленькая, цвета из общих токенов */
+.undo1 { font: inherit; font-size: 13px; padding: 2px 8px; margin: 0 4px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; vertical-align: middle; }
+.undo1:hover { color: inherit; }

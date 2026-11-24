@@ -361,6 +361,9 @@ export async function hwRun(id) {
     return `<span class="slot${st}" data-s="${i}">${s.opts.map((o, k) =>
       `<button type="button" class="ch${norm(v) === norm(o) ? ' sel' : ''}" data-s="${i}" data-v="${esc(o)}"${checked ? ' disabled' : ''}>${'abcd'[k]} ${esc(o)}</button>`).join('')}</span>`;
   };
+  // Яна 24.11: исправила после первой проверки, а первый вариант был вернее — кнопка «↩ первый вариант» у этого места
+  const first = i => { const f = h.peek?.answers?.[i]; return f != null && String(f).trim() && norm(String(f)) !== norm(String(answers[i] ?? '')) ? String(f) : null; };
+  const undo = i => first(i) == null ? '' : `<button type="button" class="undo1" data-s="${i}" title="${esc(first(i))}">↩ первый вариант</button>`;
   // верно, но не как в ключе (второй вариант) - подсказываем, как в ключе
   const fix = i => {
     if (!checked) return '';
@@ -408,11 +411,11 @@ export async function hwRun(id) {
           const st = checked ? { ok: 'good', typo: 'typo', bad: 'wrong' }[grade(v, keyFor(c, answers)[i])] : peekSt(i) ? { ok: 'good', typo: 'typo', bad: 'wrong' }[peekSt(i)] : (v ? 'filled' : '');
           return `<span class="gap ${st}">${v ? esc(v) : `___${k}`}</span>`;
         })}</div>
-        <div class="ablines">${(c.choices || []).map((_, i) => `<div class="abline"><b>${i + 1}:</b> ${widget(i)} ${fix(i)}</div>`).join('')}</div>`
+        <div class="ablines">${(c.choices || []).map((_, i) => `<div class="abline"><b>${i + 1}:</b> ${widget(i)} ${undo(i)} ${fix(i)}</div>`).join('')}</div>`
       : '';
     n = abCount;
     const items = (c.items || []).map((it, k) => {
-      const html = esc(it.text).replace(/\{([^{}]*)\}/g, () => { const i = n++; return widget(i) + fix(i); });
+      const html = esc(it.text).replace(/\{([^{}]*)\}/g, () => { const i = n++; return widget(i) + undo(i) + fix(i); });
       return `<li>${html}</li>`;
     }).join('');
 
@@ -487,6 +490,15 @@ export async function hwRun(id) {
         hwRun(id);
       };
     }
+    $app.querySelectorAll('.undo1').forEach(b => b.onclick = async () => {
+      const i = +b.dataset.s;
+      await saveAnswer(i, first(i));
+      if (checked) {  // счёт «после исправлений» пересчитываем; «с первого раза» не меняется
+        h.result.after = slots.filter((_, j) => grade(answers[j], keyFor(c, answers)[j]) !== 'bad').length;
+        await S.saveHw(h);
+      }
+      const y = scrollY; render(); scrollTo(0, y);
+    });
     $app.querySelector('#copy').onclick = copyAnswers;
   };
 
