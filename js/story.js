@@ -19,11 +19,26 @@ export async function storyProgress() {
   return { title: s.title, total: s.chapters.length, open: Math.min(s.chapters.length, 1 + done) };
 }
 
+// Прочитанные главы: номер → дата первой отметки «Прочитала главу» (Яна 24.11: «не понимаю, какая последняя прочитанная»).
+async function readMap() {
+  const m = new Map();
+  (await db.getAll('events')).filter(e => e.type === 'read' && /^ch\d+$/.test(e.cardId))
+    .forEach(e => { const n = +e.cardId.slice(2); if (!m.has(n) || e.at < m.get(n)) m.set(n, e.at); });
+  return m;
+}
+const dm = t => new Date(t).toLocaleDateString('ru-RU', { day: 'numeric', month: 'numeric' });
+
 export async function storyCard() {
   try {
     const p = await storyProgress();
-    return `<a class="card story-card" href="#/story/${p.open}">
+    const rd = await readMap();
+    const last = rd.size ? Math.max(...rd.keys()) : 0;
+    // открываем последнюю прочитанную главу (ничего не прочитано — первую)
+    return `<a class="card story-card" href="#/story/${last || 1}">
       <h2>📖 ${esc(p.title)}</h2>
+      <p>${last ? `Последняя прочитанная — <b>глава ${last}</b> (${dm(rd.get(last))})` : 'Ещё ни одной главы не прочитано'}</p>
+      <p class="story-dots">${Array.from({ length: p.total }, (_, i) => i + 1).map(n =>
+        `<span class="${rd.has(n) ? 'rd' : n <= p.open ? 'op' : 'lk'}" title="${rd.has(n) ? 'прочитана ' + dm(rd.get(n)) : n <= p.open ? 'открыта, не прочитана' : 'закрыта'}">${rd.has(n) ? '✓' : n <= p.open ? n : '🔒'}</span>`).join('')}</p>
       <p class="muted">Открыто глав: ${p.open} из ${p.total}. Каждая сделанная домашка открывает следующую.</p>
     </a>`;
   } catch { return ''; }
@@ -83,11 +98,13 @@ export async function storyView(n) {
   const id = 'ch' + n, today = new Date().setHours(0, 0, 0, 0);
   const reads = (await db.getAll('events')).filter(e => e.type === 'read' && e.cardId === id);
   const readToday = reads.some(e => e.at >= today);
+  const readAt = reads.length ? Math.min(...reads.map(e => e.at)) : 0;
   $app.innerHTML = `
     <header class="top"><a class="back" href="#/stats">‹</a><h1 class="grow">📖 ${n}. ${esc(ch.title)}</h1></header>
+    ${readAt ? `<p class="muted">✓ Прочитана ${dm(readAt)}</p>` : ''}
     <article class="flash story">${html}</article>
     <p class="muted center">Подчёркнутое слово — перевод слова. «ru» в конце — перевод всего предложения.</p>
-    <button class="btn wide${readToday ? '' : ' primary'}" id="readDone"${readToday ? ' disabled' : ''}>${readToday ? '✓ Сегодня прочитано — питомец сыт 🐾' : '✓ Прочитала главу'}</button>
+    <button class="btn wide${readToday ? '' : ' primary'}" id="readDone"${readAt ? ' disabled' : ''}>${readToday ? '✓ Сегодня прочитано — питомец сыт 🐾' : readAt ? `✓ Прочитана ${dm(readAt)}` : '✓ Прочитала главу'}</button>
     <div class="row">
       ${n > 1 ? `<a class="btn" href="#/story/${n - 1}">‹ Глава ${n - 1}</a>` : ''}
       ${n < s.chapters.length ? (n < p.open ? `<a class="btn primary grow" href="#/story/${n + 1}">Глава ${n + 1} ›</a>`

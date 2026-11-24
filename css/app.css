@@ -648,3 +648,8 @@ a.gram { color: #1a56db; text-decoration: underline; cursor: pointer; }
 /* ↩ первый вариант ответа (24.11) — маленькая, цвета из общих токенов */
 .undo1 { font: inherit; font-size: 13px; padding: 2px 8px; margin: 0 4px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; vertical-align: middle; }
 .undo1:hover { color: inherit; }
+/* прочитанные главы (24.11): ✓ прочитана, номер — открыта, 🔒 — закрыта; цвета из общих токенов */
+.story-dots { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
+.story-dots span { min-width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 50%; font-size: 13px; color: var(--muted); }
+.story-dots .rd { color: var(--ok); border-color: var(--ok); font-weight: 700; }
+.story-dots .lk { font-size: 11px; opacity: .6; }
