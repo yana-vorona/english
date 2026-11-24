@@ -1,6 +1,6 @@
 // Правила-подсказки (Яна 24.11: «тема в задании — синяя подчёркнутая ссылка, нажала — вышло правило, не всегда показывать»).
 // Тема ищется в тексте задания; правило — по Language bank учебника. Новые правила — добавлять в RULES (длинные названия выше коротких).
-import { esc } from './ui.js';
+import { esc, movable } from './ui.js';
 
 const RULES = [
   { id: 'ppp', re: /present perfect passive|present perfect (в )?(страдательн|пассив)\S*/i, title: 'Present perfect passive', html: `<p class="muted">Учебник, Grammar Reference, стр. 141 (9.4)</p>
@@ -72,7 +72,8 @@ function show(id) {
       });
     }
     side.classList.remove('mini');
-    side.innerHTML = `<div class="gs-h"><b>📘 ${esc(r.title)}</b><span class="gs-btns"><button type="button" class="gs-min" title="свернуть / развернуть">—</button><button type="button" class="gs-x" title="закрыть">✕</button></span></div><div class="gram-body">${r.html}</div>`;
+    side.innerHTML = `<div class="gs-h" title="потяни, чтобы переставить"><b>📘 ${esc(r.title)}</b><span class="gs-btns"><button type="button" class="gs-min" title="свернуть / развернуть">—</button><button type="button" class="gs-x" title="закрыть">✕</button></span></div><div class="gram-body">${r.html}</div>`;
+    movable(side, side.querySelector('.gs-h'), 'gramPos');
     return;
   }
   const d = document.createElement('dialog');

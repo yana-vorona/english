@@ -6,7 +6,7 @@
 // type 'textab': сверху text с пропусками {1}, {2}…, под ним строки «1: [a] [b]» из choices.
 // answers — правильные ответы по порядку всех мест выбора.
 import * as S from './store.js';
-import { esc, toast } from './ui.js';
+import { esc, toast, movable } from './ui.js';
 import { linkify } from './grammar.js';
 import { syncNow } from './sync.js';
 import { getCfg, nextLessonOf } from './lessons.js';
@@ -421,6 +421,8 @@ export async function hwRun(id) {
       <button class="btn wide" id="copy">📋 Скопировать ответы</button>
       ${checked || manualDone ? '' : '<button class="btn ghost wide" id="manual">✓ Уже сделала (в тетради)</button>'}
       ${checked ? '<button class="btn ghost wide" id="redo">🔄 Пройти заново</button>' : ''}`;
+    // окно «📖 Упражнение / Из книги» справа — таскается за заголовок (на широком экране оно плавающее)
+    if (matchMedia('(min-width: 1150px)').matches) $app.querySelectorAll('details.hwref:not(.inl)').forEach(d => movable(d, d.querySelector('summary'), 'hwrefPos'));
     bind();
   };
 
