@@ -605,3 +605,23 @@ body.wide #app { max-width: none; margin-right: 16px; }
 /* картинка-мем в списке слов темы */
 .card-row:has(.rowpic) { grid-template-columns: 1fr 1fr auto auto; }
 .card-row .rowpic { width: 56px; height: 42px; object-fit: cover; border-radius: 6px; grid-row: 1; grid-column: 4; }
+
+/* ПК: кнопка «свернуть» в заголовке словарика */
+@media (min-width: 1001px) {
+  .dict .dict-h { display: flex; justify-content: space-between; align-items: center; }
+  .dict .dict-x { display: inline-block; cursor: pointer; white-space: nowrap; }
+  .dict .dict-h { white-space: nowrap; }
+  .dict.mini .dict-body { display: none; }
+  .dict.mini .dict-h { margin: 0; }
+}
+
+/* ссылки на правила в задании ДЗ */
+a.gram { color: #1a56db; text-decoration: underline; cursor: pointer; }
+.gram-dlg { max-width: min(560px, calc(100vw - 32px)); max-height: 85vh; overflow: auto; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; background: var(--surface); color: var(--text); }
+.gram-dlg::backdrop { background: #0005; }
+.gram-dlg h3 { margin: 0 0 10px; }
+.gram-body p { margin: 6px 0; line-height: 1.45; }
+.gram-body .f { margin: 8px 0; padding: 8px 10px; border-radius: 10px; background: #eef4ff; font-weight: 600; }
+.gram-body ul { margin: 4px 0 8px; padding-left: 20px; }
+.gram-body li { margin: 3px 0; }
+.gram-body b.en { color: #1a56db; }

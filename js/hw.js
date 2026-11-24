@@ -7,6 +7,7 @@
 // answers — правильные ответы по порядку всех мест выбора.
 import * as S from './store.js';
 import { esc, toast } from './ui.js';
+import { linkify } from './grammar.js';
 import { syncNow } from './sync.js';
 import { getCfg, nextLessonOf } from './lessons.js';
 
@@ -407,7 +408,7 @@ export async function hwRun(id) {
       <header class="top"><a class="back" href="${back}">‹</a><h1 class="grow">${esc(title(h))}</h1><button class="icon" id="del">🗑</button></header>
       <p class="muted">⏱ ~${mins} мин · ${DIFF[diff]} · ${esc(formatOf(c))}${h.lesson ? ` · к уроку ${esc(fmtDate(h.lesson))}` : ''}</p>
       ${manualDone ? '<p class="card">✅ Отмечено, что сделала (в тетради). Можно посмотреть или пройти здесь с проверкой.</p>' : ''}
-      ${c.instruction ? `<p class="instr">${esc(c.instruction)}</p>` : ''}
+      ${c.instruction ? `<p class="instr">${linkify(c.instruction)}</p>` : ''}
       ${srcHtml || refHtml}
       ${srcHtml && refHtml ? refHtml.replace('class="hwref"', 'class="hwref inl"') : ''}
       ${sideHtml}

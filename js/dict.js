@@ -135,13 +135,17 @@ export function mountDict() {
     if (drag && moved) { const r = box.getBoundingClientRect(); ls('dictPos', { x: r.left, y: r.top }); }
     drag = null;
   });
-  head.addEventListener('click', () => { if (!wide.matches) { box.classList.toggle('open'); if (box.classList.contains('open')) box.querySelector('.dictq').focus(); } });
+  // ПК (Яна 24.11: «кнопку Свернуть в правом верхнем углу, не стирая слово»): свёрнутый — только заголовок, текст остаётся
+  const mini = v => { box.classList.toggle('mini', v); ls('dictMini', v); x.textContent = v ? '▸ развернуть' : '▾ свернуть'; if (!v) box.querySelector('.dictq').focus(); };
+  head.addEventListener('click', () => { if (wide.matches && !moved && box.classList.contains('mini')) mini(false); if (!wide.matches) { box.classList.toggle('open'); if (box.classList.contains('open')) box.querySelector('.dictq').focus(); } });
   // свернуть обратно (Яна 23.11: «Словарик как свернуть обратно?»): кнопка «✕» в заголовке и щелчок мимо словарика
   const shut = () => { box.classList.remove('open'); if (box.contains(document.activeElement)) document.activeElement.blur(); };
   const x = document.createElement('span');
   x.className = 'dict-x'; x.textContent = '✕ свернуть';
   head.appendChild(x);
-  x.addEventListener('click', e => { e.stopPropagation(); shut(); });
+  x.addEventListener('pointerdown', e => e.stopPropagation());
+  x.addEventListener('click', e => { e.stopPropagation(); if (wide.matches) mini(!box.classList.contains('mini')); else shut(); });
+  if (ls('dictMini')) { box.classList.add('mini'); x.textContent = '▸ развернуть'; }
   document.addEventListener('pointerdown', e => { if (!wide.matches && box.classList.contains('open') && !box.contains(e.target)) shut(); });
 }
 
