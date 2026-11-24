@@ -94,7 +94,9 @@ const typo = (a, b) => String(b ?? '').split(' | ').some(b1 => {
   return d.length === 1 && d[0][1].length >= 5 && lev1(d[0][0], d[0][1]);
 });
 // ok - верно, typo - опечатка (засчитываем, но показываем), bad - ошибка
-const grade = (a, b) => same(a, b) ? 'ok' : typo(a, b) ? 'typo' : 'bad';
+// 24.11 (99.3 «составь вопрос и ответь про себя»): в ключе только вопрос — сверяем часть до «?», свой ответ после него не штрафуем
+const qcut = (a, b) => { a = String(a ?? ''); const i = a.indexOf('?'); return /\?\s*$/.test(String(b ?? '').split(' | ')[0]) && i >= 0 && a.slice(i + 1).trim() ? a.slice(0, i + 1) : a; };
+const grade = (a, b) => { a = qcut(a, b); return same(a, b) ? 'ok' : typo(a, b) ? 'typo' : 'bad'; };
 // 17.11 (96.3): «wood, paper and cardboard» — перечисление, порядок не важен. Места одного пункта, между которыми только
 // «,» / «and» / «or», — одна группа: ответ засчитываем, если он есть среди ключей группы (каждый ключ — один раз).
 function keyFor(c, answers) {
@@ -355,7 +357,7 @@ export async function hwRun(id) {
     const key = String(keyFor(c, answers)[i]).split(' | '), g = grade(answers[i], keyFor(c, answers)[i]);
     if (g === 'ok') return key.length > 1 && !same(answers[i], key[0]) ? `<span class="fix key">в ключе: ${esc(key[0])}</span>` : '';
     // выделяем, какие слова не совпали: в ответе ключа - чего не хватает, «у тебя» - что лишнее/неверное
-    const mine = short(answers[i]).split(' ').filter(Boolean), keyw = short(key[0]).split(' ').filter(Boolean);
+    const mine = short(qcut(answers[i], key[0])).split(' ').filter(Boolean), keyw = short(key[0]).split(' ').filter(Boolean);
     const hl = key[0].split(/(\s+)/).map(t => { const w = short(t); return w && !mine.includes(w) ? `<mark>${esc(t)}</mark>` : esc(t); }).join('');
     const extra = mine.filter(w => !keyw.includes(w));
     const yours = g === 'bad' && extra.length && extra.length <= 4 ? ` <span class="yours">у тебя: ${extra.map(w => `<s>${esc(w)}</s>`).join(' ')}</span>` : '';
