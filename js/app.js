@@ -6,7 +6,7 @@ import { learnView, reviewView, REVIEW_GAMES } from './study.js';
 import { syncConfig, syncStatus, syncNow, connect, disconnect, startSync } from './sync.js';
 import { startPalette } from './palette.js';
 import { trainerList, trainerRun } from './trainer.js';
-import { hwList, hwRun } from './hw.js';
+import { hwList, hwRun, hwRefresh } from './hw.js';
 import { statsView, computeStats, statsBanner } from './stats.js';
 import { storyView } from './story.js';
 import { duelView } from './duel.js';
@@ -669,6 +669,7 @@ async function connectView(code) {
 window.addEventListener('synced', () => {
   const h = location.hash || '#/';
   if (/^#?\/?$|^#\/deck\/|^#\/fix$|^#\/trainer$|^#\/hw$/.test(h)) router();
+  else if (/^#\/hw\/[^/]+$/.test(h)) hwRefresh();
   fixStickers();
 });
 

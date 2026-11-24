@@ -296,9 +296,19 @@ async function addDialog() {
 
 // ---------- Упражнение ----------
 
+// Открытое упражнение помним: пришла из облака новая версия (ПК поправил задание) — перерисовываем,
+// иначе старая копия на экране запишется поверх (Яна 24.11, РТ 99.4: «обновила — ничего не изменилось»).
+let shown = null;
+export async function hwRefresh() {
+  if (!shown || location.hash !== '#/hw/' + shown.id) return;
+  const h = await S.getHw(shown.id);
+  if (h && (h.contentAt || 0) > shown.at) hwRun(shown.id);
+}
+
 export async function hwRun(id) {
   const h = await S.getHw(id);
   if (!h) { location.hash = '#/hw'; return; }
+  shown = { id, at: h.contentAt || 0 };
   const back = '#/hw';
   const c = h.content;
   const factor = await S.getMeta('hwFactor', 1);
