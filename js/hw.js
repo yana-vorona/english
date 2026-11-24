@@ -95,7 +95,7 @@ const typo = (a, b) => String(b ?? '').split(' | ').some(b1 => {
 });
 // ok - верно, typo - опечатка (засчитываем, но показываем), bad - ошибка
 // 24.11 (99.3 «составь вопрос и ответь про себя»): в ключе только вопрос — сверяем часть до «?», свой ответ после него не штрафуем
-const qcut = (a, b) => { a = String(a ?? ''); const i = a.indexOf('?'); return /\?\s*$/.test(String(b ?? '').split(' | ')[0]) && i >= 0 && a.slice(i + 1).trim() ? a.slice(0, i + 1) : a; };
+const qcut = (a, b) => { a = String(a ?? ''); const i = a.search(/[?.]/); return /\?\s*$/.test(String(b ?? '').split(' | ')[0]) && i >= 0 && a.slice(i + 1).trim() ? a.slice(0, i + 1) : a; };
 const grade = (a, b) => { a = qcut(a, b); return same(a, b) ? 'ok' : typo(a, b) ? 'typo' : 'bad'; };
 // 17.11 (96.3): «wood, paper and cardboard» — перечисление, порядок не важен. Места одного пункта, между которыми только
 // «,» / «and» / «or», — одна группа: ответ засчитываем, если он есть среди ключей группы (каждый ключ — один раз).
