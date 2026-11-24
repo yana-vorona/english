@@ -54,9 +54,27 @@ export function linkify(text) {
   });
 }
 
+// ПК (Яна 24.11): правило — окошком справа, чтобы смотреть и делать упражнение одновременно; «—» свернуть, «✕» закрыть.
+// Телефон: места нет — окно поверх, кнопка «Понятно».
+const wide = matchMedia('(min-width: 1001px)');
+let side = null;
 function show(id) {
   const r = RULES.find(x => x.id === id);
   if (!r) return;
+  if (wide.matches) {
+    if (!side) {
+      side = document.createElement('section');
+      side.className = 'gram-side';
+      document.body.appendChild(side);
+      side.addEventListener('click', e => {
+        if (e.target.closest('.gs-min')) side.classList.toggle('mini');
+        else if (e.target.closest('.gs-x')) { side.remove(); side = null; }
+      });
+    }
+    side.classList.remove('mini');
+    side.innerHTML = `<div class="gs-h"><b>📘 ${esc(r.title)}</b><span class="gs-btns"><button type="button" class="gs-min" title="свернуть / развернуть">—</button><button type="button" class="gs-x" title="закрыть">✕</button></span></div><div class="gram-body">${r.html}</div>`;
+    return;
+  }
   const d = document.createElement('dialog');
   d.className = 'gram-dlg';
   d.innerHTML = `<h3>📘 ${esc(r.title)}</h3><div class="gram-body">${r.html}</div><form method="dialog"><button class="btn primary wide">Понятно</button></form>`;
@@ -65,6 +83,8 @@ function show(id) {
   d.addEventListener('click', e => { if (e.target === d) d.close(); });
   d.showModal();
 }
+// ушла со страницы ДЗ — окошко правила закрываем
+addEventListener('hashchange', () => { if (side && !location.hash.startsWith('#/hw/')) { side.remove(); side = null; } });
 
 document.addEventListener('click', e => {
   const a = e.target.closest('a.gram');

@@ -103,6 +103,7 @@ export function mountDict() {
   const box = document.createElement('section');
   box.className = 'dict';
   box.innerHTML = `<div class="dict-h" title="на ПК - потяни, чтобы переставить">📖 Словарик</div><div class="dict-body">${FORM}
+    <div class="dict-hist"></div>
     <button type="button" class="talkBtn dict-go">📋 Раздел</button></div>`;
   document.body.appendChild(box);
   bind(box);
@@ -136,16 +137,41 @@ export function mountDict() {
     drag = null;
   });
   // ПК (Яна 24.11: «кнопку Свернуть в правом верхнем углу, не стирая слово»): свёрнутый — только заголовок, текст остаётся
-  const mini = v => { box.classList.toggle('mini', v); ls('dictMini', v); x.textContent = v ? '▸ развернуть' : '▾ свернуть'; if (!v) box.querySelector('.dictq').focus(); };
-  head.addEventListener('click', () => { if (wide.matches && !moved && box.classList.contains('mini')) mini(false); if (!wide.matches) { box.classList.toggle('open'); if (box.classList.contains('open')) box.querySelector('.dictq').focus(); } });
+  const mini = v => { if (v) stash(); box.classList.toggle('mini', v); ls('dictMini', v); x.textContent = v ? '▢' : '—'; x.title = v ? 'развернуть' : 'свернуть'; if (!v) box.querySelector('.dictq').focus(); };
+  head.addEventListener('click', () => { if (wide.matches && !moved && box.classList.contains('mini')) mini(false); if (!wide.matches) { if (box.classList.contains('open')) shut(); else { box.classList.add('open'); box.querySelector('.dictq').focus(); } } });
   // свернуть обратно (Яна 23.11: «Словарик как свернуть обратно?»): кнопка «✕» в заголовке и щелчок мимо словарика
-  const shut = () => { box.classList.remove('open'); if (box.contains(document.activeElement)) document.activeElement.blur(); };
+  // История (Яна 24.11): при сворачивании слово стирается и уходит в «последние 5»; история сворачивается отдельно, выбор запоминается
+  const hist = box.querySelector('.dict-hist'), q = box.querySelector('.dictq');
+  const drawHist = () => {
+    const list = ls('dictHist') || [], open = ls('dictHistOpen') !== false;
+    hist.innerHTML = list.length ? `<div class="dict-hh">🕘 История <span class="dict-hx" title="${open ? 'свернуть' : 'развернуть'}">${open ? '—' : '▢'}</span></div>
+      ${open ? `<ul>${list.map((h, i) => `<li data-i="${i}"><b>${esc(h.q)}</b>${h.ru ? ` — ${esc(h.ru)}` : ''}</li>`).join('')}</ul>` : ''}` : '';
+  };
+  const stash = () => {
+    const v = q.value.trim();
+    if (!v) return;
+    const r = cache.get(v);
+    const list = (ls('dictHist') || []).filter(h => h.q.toLowerCase() !== v.toLowerCase());
+    list.unshift({ q: v, ru: r?.en && r.en.toLowerCase() !== v.toLowerCase() ? r.en : r?.main || '' });
+    ls('dictHist', list.slice(0, 5));
+    q.value = ''; box.querySelector('.dictr').innerHTML = '';
+    drawHist();
+  };
+  hist.addEventListener('click', e => {
+    if (e.target.closest('.dict-hh')) { ls('dictHistOpen', ls('dictHistOpen') === false); drawHist(); return; }
+    const li = e.target.closest('li[data-i]');
+    if (!li) return;
+    const h = (ls('dictHist') || [])[+li.dataset.i];
+    if (h) { q.value = h.q; q.dispatchEvent(new Event('input')); q.focus(); }
+  });
+  drawHist();
+  const shut = () => { stash(); box.classList.remove('open'); if (box.contains(document.activeElement)) document.activeElement.blur(); };
   const x = document.createElement('span');
-  x.className = 'dict-x'; x.textContent = '✕ свернуть';
+  x.className = 'dict-x'; x.textContent = '—'; x.title = 'свернуть';
   head.appendChild(x);
   x.addEventListener('pointerdown', e => e.stopPropagation());
   x.addEventListener('click', e => { e.stopPropagation(); if (wide.matches) mini(!box.classList.contains('mini')); else shut(); });
-  if (ls('dictMini')) { box.classList.add('mini'); x.textContent = '▸ развернуть'; }
+  if (ls('dictMini')) { box.classList.add('mini'); x.textContent = '▢'; x.title = 'развернуть'; }
   document.addEventListener('pointerdown', e => { if (!wide.matches && box.classList.contains('open') && !box.contains(e.target)) shut(); });
 }
 
